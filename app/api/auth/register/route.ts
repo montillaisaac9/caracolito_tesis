@@ -15,6 +15,7 @@ const registerSchema = z.object({
 });
 
 export async function POST(req: Request) {
+
   try {
     // Parsear y validar datos del request con Zod
     const body = await req.json();
