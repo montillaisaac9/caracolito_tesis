@@ -43,7 +43,7 @@ const Home: React.FC = () => {
       setErrors({}); // Limpiar errores si la validación pasa
 
       // Enviar datos con Axios
-      const response = await axios.post('/api/register', formData);
+      const response = await axios.post('/api/auth/register', formData);
       if (response.status === 200 || response.status === 201) {
         console.log('Usuario registrado exitosamente');
         // Aquí podrías cerrar el modal o redirigir al usuario
