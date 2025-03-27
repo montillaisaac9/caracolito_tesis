@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,21 +7,98 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
-// Modelo de Usuario (estudiantes y profesores)
 model User {
-  id            String    @id @default(cuid())
-  name          String
-  email         String    @unique
-  password      String
-  role          Role      @default(STUDENT)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
-  // Relaciones
-  studentProgress  Progress[]
-  createdActivities Activity[]    @relation("CreatedBy")
-  createdModules    Module[]      @relation("ModuleCreatedBy")
+  id                String     @id @default(cuid())
+  name              String
+  email             String     @unique
+  password          String
+  role              Role       @default(STUDENT)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  createdActivities Activity[] @relation("CreatedBy")
+  createdModules    Module[]   @relation("ModuleCreatedBy")
+  studentProgress   Progress[]
+}
+
+model Module {
+  id          String   @id @default(cuid())
+  title       String
+  createdAt   DateTime @default(now())
+  createdById String
+  description String
+  isActive    Boolean  @default(true)
+  order       Int
+  updatedAt   DateTime @updatedAt
+  createdBy   User     @relation("ModuleCreatedBy", fields: [createdById], references: [id])
+  topics      Topic[]
+}
+
+model Topic {
+  id         String     @id @default(cuid())
+  title      String
+  content    String
+  order      Int
+  isActive   Boolean    @default(true)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  moduleId   String
+  activities Activity[]
+  module     Module     @relation(fields: [moduleId], references: [id])
+}
+
+model Activity {
+  id          String          @id @default(cuid())
+  title       String
+  type        ActivityType
+  difficulty  DifficultyLevel @default(BEGINNER)
+  config      Json
+  points      Int             @default(10)
+  timeLimit   Int?
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  topicId     String
+  createdById String
+  createdBy   User            @relation("CreatedBy", fields: [createdById], references: [id])
+  topic       Topic           @relation(fields: [topicId], references: [id])
+  progress    Progress[]
+}
+
+model Progress {
+  id          String    @id @default(cuid())
+  score       Int       @default(0)
+  completed   Boolean   @default(false)
+  timeSpent   Int?
+  attempts    Int       @default(0)
+  lastAttempt DateTime?
+  feedback    String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  studentId   String
+  activityId  String
+  activity    Activity  @relation(fields: [activityId], references: [id])
+  student     User      @relation(fields: [studentId], references: [id])
+
+  @@unique([studentId, activityId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  userId    String
+}
+
+model Resource {
+  id        String       @id @default(cuid())
+  title     String
+  type      ResourceType
+  url       String?
+  content   String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 }
 
 enum Role {
@@ -36,61 +107,8 @@ enum Role {
   ADMIN
 }
 
-// Módulos temáticos del curso
-model Module {
-  id          String    @id @default(cuid())
-  title       String
-  description String
-  order       Int
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  
-  // Relaciones
-  createdBy   User      @relation("ModuleCreatedBy", fields: [createdById], references: [id])
-  createdById String
-  topics      Topic[]
-}
-
-// Temas dentro de cada módulo
-model Topic {
-  id          String    @id @default(cuid())
-  title       String
-  content     String    @db.Text
-  order       Int
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  
-  // Relaciones
-  module      Module    @relation(fields: [moduleId], references: [id])
-  moduleId    String
-  activities  Activity[]
-}
-
-// Actividades (sopas de letras, cuestionarios, etc.)
-model Activity {
-  id          String    @id @default(cuid())
-  title       String
-  type        ActivityType
-  difficulty  DifficultyLevel @default(BEGINNER)
-  config      Json      // Configuración específica de la actividad (por ejemplo, palabras para la sopa de letras)
-  points      Int       @default(10)
-  timeLimit   Int?      // Límite de tiempo en segundos (opcional)
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  
-  // Relaciones
-  topic       Topic     @relation(fields: [topicId], references: [id])
-  topicId     String
-  createdBy   User      @relation("CreatedBy", fields: [createdById], references: [id])
-  createdById String
-  progress    Progress[]
-}
-
 enum ActivityType {
-  WORD_SEARCH // Sopa de letras
+  WORD_SEARCH
   QUIZ
   MATCHING
   EXERCISE
@@ -100,50 +118,6 @@ enum DifficultyLevel {
   BEGINNER
   INTERMEDIATE
   ADVANCED
-}
-
-// Progreso del estudiante en las actividades
-model Progress {
-  id          String    @id @default(cuid())
-  score       Int       @default(0)
-  completed   Boolean   @default(false)
-  timeSpent   Int?      // Tiempo utilizado en segundos
-  attempts    Int       @default(0)
-  lastAttempt DateTime?
-  feedback    String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  
-  // Relaciones
-  student     User      @relation(fields: [studentId], references: [id])
-  studentId   String
-  activity    Activity  @relation(fields: [activityId], references: [id])
-  activityId  String
-
-  @@unique([studentId, activityId])
-}
-
-// Notificaciones para los usuarios
-model Notification {
-  id          String    @id @default(cuid())
-  title       String
-  message     String
-  read        Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  
-  // Relaciones
-  userId      String
-}
-
-// Recursos educativos adicionales
-model Resource {
-  id          String    @id @default(cuid())
-  title       String
-  type        ResourceType
-  url         String?
-  content     String?   @db.Text
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
 }
 
 enum ResourceType {

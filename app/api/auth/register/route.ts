@@ -58,7 +58,7 @@ export async function POST(req: Request) {
 
     // Transformar a DTO
     const userDTO = toUserDTO(user);
-
+    await prisma.$disconnect();
     return NextResponse.json(
       {
         success: true,
@@ -69,6 +69,7 @@ export async function POST(req: Request) {
     );
   } catch (error) {
     console.error("Error al registrar usuario:", error);
+    await prisma.$disconnect();
     return NextResponse.json(
       {
         success: false,
