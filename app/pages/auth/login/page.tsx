@@ -8,10 +8,10 @@ import {
   CardTitle,
   CardContent,
   CardFooter,
-} from "@/app/components/ui/cards";
-import Input from "@/app/components/ui/input";
-import { Label } from "@/app/components/ui/label";
-import { Checkbox } from "@/app/components/ui/checkbox";
+} from "@/app/components/ui/authentication/cards";
+import Input from "@/app/components/ui/common/input";
+import { Label } from "@/app/components/ui/common/label";
+import { Checkbox } from "@/app/components/ui/common/checkbox";
 import { X } from "lucide-react";
 import Link from "next/link";
 

@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { z } from "zod";
-import Input from "@/app/components/ui/input";
+import Input from "@/app/components/ui/common/input";
 import {
   Card,
   CardContent,
@@ -12,9 +12,9 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/app/components/ui/cards";
-import RadioButton from "@/app/components/ui/radioButton"; // Asegúrate de importar el RadioButton
-import Spinner from "@/app/components/progresBar";
+} from "@/app/components/ui/authentication/cards";
+import RadioButton from "@/app/components/ui/common/radioButton"; // Asegúrate de importar el RadioButton
+import Spinner from "@/app/components/ui/common/progresBar";
 
 // Esquema de validación con Zod
 const userSchema = z.object({

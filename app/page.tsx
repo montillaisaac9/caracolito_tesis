@@ -3,8 +3,8 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { z } from "zod";
-import Input from './components/ui/input';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./components/ui/cards";
+import Input from './components/ui/common/input';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./components/ui/authentication/cards";
 
 // Esquema de validación con Zod
 const userSchema = z.object({
