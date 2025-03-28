@@ -1,26 +1,37 @@
-// app/dashboard/layout.tsx
 "use client";
 
-import Sidebar from "@/app/components/ui/dashboard/sidebar";
 import { useState } from "react";
 import { FiHome, FiBook, FiUser } from "react-icons/fi";
+import Sidebar from "./components/sidebar";
 
-const dashboardLinks = [
-  { name: "Dashboard", href: "/dashboard", icon: <FiHome /> },
-  { name: "Módulos", href: "/dashboard/modulos", icon: <FiBook /> },
-  { name: "Perfil", href: "/dashboard/perfil", icon: <FiUser /> },
+const initialLinks = [
+  { name: "Dashboard", href: "/pages/admin", icon: <FiHome />, select: true },
+  { name: "Módulos", href: "/pages/admin/module", icon: <FiBook />, select: false },
+  { name: "Perfil", href: "/pages/admin/perfil", icon: <FiUser />, select: false },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [links, setLinks] = useState(initialLinks);
+
+  // Función para actualizar la selección de links
+  const handleSelectLink = (selectedHref: string) => {
+    setLinks(prevLinks =>
+      prevLinks.map(link => ({
+        ...link,
+        select: link.href === selectedHref
+      }))
+    );
+  };
 
   return (
     <div className="flex min-h-screen">
       {/* Sidebar colapsable */}
       <Sidebar
-        links={dashboardLinks}
+        links={links}
         isOpen={isSidebarOpen}
         setIsOpen={setIsSidebarOpen}
+        onSelectLink={handleSelectLink} // Pasamos la función
       />
 
       {/* Contenido principal */}

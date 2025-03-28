@@ -1,6 +1,7 @@
 // app/dashboard/page.tsx
-import DashboardCard from "@/app/components/ui/dashboard/card";
-import ModuleCard from "@/app/components/ui/dashboard/moduleCard";
+
+import DashboardCard from "./components/card";
+import ModuleCard from "./components/moduleCard";
 
 export default function Dashboard() {
   const modules = [
