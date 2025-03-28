@@ -14,4 +14,3 @@ export interface Module {
     topics?: Topic[]; // Relación con los temas asociados al módulo (opcional)
   }
   
-  
