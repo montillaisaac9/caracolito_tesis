@@ -22,6 +22,8 @@ export const ModuleSchema = z.object({
 //OBTENER TODAS LOS MODULOS CON PAGINADO
 export async function GET(req:NextRequest) {
     try {
+        console.log("llegaaaa");
+        
         const seach = req.nextUrl.searchParams
         const page = seach.get('page') || ""
         const limit = seach.get("limit") || ""
