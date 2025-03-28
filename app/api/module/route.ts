@@ -18,11 +18,9 @@ export const ModuleSchema = z.object({
     .number()
     .int()
     .positive({ message: "El orden debe ser un número entero positivo" }),
-  createdById: z
-    .string()
-    .min(1, {
-      message: "El createdById es obligatorio y no puede estar vacío",
-    }),
+  createdById: z.string().min(1, {
+    message: "El createdById es obligatorio y no puede estar vacío",
+  }),
 });
 
 //OBTENER TODAS LOS MODULOS CON PAGINADO
