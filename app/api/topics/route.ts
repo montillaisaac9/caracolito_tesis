@@ -1,3 +1,5 @@
-import { PrismaClient } from "@prisma/client";
-import { Topic } from "@/app/types/activities";
-import { NextRequest } from "next/server";
+import { NextResponse } from "next/server"
+
+export async function GET(req: Request){
+    return NextResponse.json({hi:"epaa"})
+}
