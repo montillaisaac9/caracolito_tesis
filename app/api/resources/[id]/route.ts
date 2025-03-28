@@ -5,10 +5,7 @@ import { NextResponse, NextRequest } from "next/server";
 import { message } from "../../helpers/responsesMsg";
 
 export async function GET(req: NextRequest) {
-
-
     try {
-
         const seach = req.nextUrl.searchParams
         const idUser = seach.get('id') || ""
         
@@ -32,6 +29,12 @@ export async function GET(req: NextRequest) {
         return NextResponse.json(message({status:200,message:`recurso encontrado`, data:[resource]}))
 
     } catch (error) {
-
+        return NextResponse.json(
+            {
+                message:"error al buscar el recurso",
+                data:error,
+                status:400
+            }
+          ); 
     }
 }
