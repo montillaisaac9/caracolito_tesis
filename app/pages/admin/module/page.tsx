@@ -1,13 +1,17 @@
 "use client";
 
+import Spinner from "@/app/components/ui/common/progresBar";
 import api from "@/app/utils/api";
 import { useEffect, useState, useCallback } from "react";
 
 interface ModuleData {
+  id: string;
   title: string;
   description: string;
-  isActive?: boolean;
   order: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
   createdById: string;
 }
 
@@ -17,6 +21,7 @@ export default function ModulesAdmin() {
   const [limit] = useState(5); // Cantidad de módulos por página
   const [totalPages, setTotalPages] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loading, setLoading] = useState(false)
 
   // Estados para el formulario
   const [title, setTitle] = useState("");
@@ -25,14 +30,22 @@ export default function ModulesAdmin() {
 
   const fetchModules = useCallback(async () => {
     try {
-      const response = await api.get(`/modules?page=${page}&limit=${limit}`);
-      setModules(response.data.modules);
-      setTotalPages(Math.ceil(response.data.total / limit));
+      setLoading(true)
+      const response = await api.get(`/module?page=${page}&limit=${limit}`);
+      if (response.status === 200 && response.data.data?.modules) {
+        // Use the modules from the nested data structure
+        setModules(response.data.data.modules);
+        // You might need to adjust total pages calculation based on your backend
+        setTotalPages(Math.ceil(response.data.data.modules.length / limit));
+      }
     } catch (error) {
       console.error("Error obteniendo módulos:", error);
+      setModules([]);
+    }
+    finally {
+      setLoading(false)
     }
   }, [page, limit]);
-
   useEffect(() => {
     fetchModules();
   }, [fetchModules]);
@@ -41,7 +54,8 @@ export default function ModulesAdmin() {
     e.preventDefault();
 
     try {
-      await api.post("/modules", {
+      setLoading(true)
+      await api.post("/module", {
         title,
         description,
         order,
@@ -57,12 +71,15 @@ export default function ModulesAdmin() {
       fetchModules(); // Recargar módulos
     } catch (error) {
       console.error("Error al crear módulo:", error);
+    } finally {
+      setLoading(false)
     }
   };
 
   return (
     <div className="p-8">
       {/* Botón para abrir el modal */}
+      <Spinner isLoading={loading} />
       <button
         onClick={() => setIsModalOpen(true)}
         className="bg-blue-600 text-white px-4 py-2 rounded-md mb-4"
@@ -72,8 +89,8 @@ export default function ModulesAdmin() {
 
       {/* Modal para crear módulos */}
       {isModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+        <div className="fixed inset-0 flex items-center justify-center bg-black/70 bg-opacity-50">
+          <div className="bg-white w-3/12 rounded-lg shadow-lg px-10 py-8">
             <h2 className="text-xl font-bold mb-4">Crear Módulo</h2>
             <form onSubmit={handleCreateModule} className="flex flex-col gap-3">
               <input
@@ -126,13 +143,21 @@ export default function ModulesAdmin() {
           </tr>
         </thead>
         <tbody>
-          {modules.map((mod, index) => (
+        {!modules || modules.length === 0 ? (
+          <tr>
+            <td colSpan={3} className="text-center py-4">
+              No hay módulos disponibles
+            </td>
+          </tr>
+        ) : (
+          modules.map((mod, index) => (
             <tr key={index} className="border-b">
               <td className="py-2 px-4">{mod.title}</td>
               <td className="py-2 px-4">{mod.description}</td>
               <td className="py-2 px-4">{mod.order}</td>
             </tr>
-          ))}
+          ))
+        )}
         </tbody>
       </table>
 
@@ -157,4 +182,3 @@ export default function ModulesAdmin() {
     </div>
   );
 }
-
