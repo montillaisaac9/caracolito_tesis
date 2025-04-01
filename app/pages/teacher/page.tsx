@@ -1,8 +1,8 @@
 // app/dashboard/page.tsx
 "use client"
 import { useCallback, useEffect } from "react";
-import DashboardCard from "@/app/components/ui/common/card";
-import ModuleCard from "@/app/components/ui/common/moduleCard";
+import DashboardCard from "../../components/ui/common/card";
+import ModuleCard from "../../components/ui/common/moduleCard";
 import axios from "axios";
 import ProtectedRoute from "@/app/components/ui/common/ProtectedRoute";
 
@@ -31,7 +31,7 @@ export default function Dashboard() {
 
 
   return (
-    <ProtectedRoute allowedRoles={['ADMIN']}>
+    <ProtectedRoute allowedRoles={['TEACHER']}>
     <div className="p-8">
       <h1 className="text-3xl font-bold mb-6">Fundamentos en Informática</h1>
 

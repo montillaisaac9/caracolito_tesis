@@ -3,6 +3,7 @@
 import Spinner from "@/app/components/ui/common/progresBar";
 import api from "@/app/utils/api";
 import { useEffect, useState, useCallback } from "react";
+import useUserStore from "@/app/stores/useUserStore";
 
 interface ModuleData {
   id: string;
@@ -22,6 +23,7 @@ export default function ModulesAdmin() {
   const [totalPages, setTotalPages] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false)
+  const { user } = useUserStore();
 
   // Estados para el formulario
   const [title, setTitle] = useState("");
@@ -55,13 +57,15 @@ export default function ModulesAdmin() {
 
     try {
       setLoading(true)
+      if (user){
       await api.post("/module", {
         title,
         description,
         order,
         isActive: true,
-        createdById: "user123", // Reemplaza con el ID real del usuario
+        createdById: user.id, // Reemplaza con el ID real del usuario
       });
+    }
 
       // Resetear formulario
       setTitle("");

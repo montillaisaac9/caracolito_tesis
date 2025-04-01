@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
     
     return NextResponse.json(
-      { message: "Login exitoso", session, user: { id: user.id, email: user.email, name: user.name } },
+      { message: "Login exitoso", session, user: { id: user.id, email: user.email, name: user.name, role: user.role  } },
       { status: 200 }
     );
 

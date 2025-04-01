@@ -23,7 +23,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }))
     );
   };
- 
+
   return (
     <div className="flex min-h-screen">
       {/* Sidebar colapsable */}

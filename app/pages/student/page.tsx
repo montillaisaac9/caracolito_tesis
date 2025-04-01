@@ -1,9 +1,7 @@
 // app/dashboard/page.tsx
 "use client"
-import { useCallback, useEffect } from "react";
-import DashboardCard from "@/app/components/ui/common/card";
-import ModuleCard from "@/app/components/ui/common/moduleCard";
-import axios from "axios";
+import DashboardCard from "../../components/ui/common/card";
+import ModuleCard from "../../components/ui/common/moduleCard";
 import ProtectedRoute from "@/app/components/ui/common/ProtectedRoute";
 
 export default function Dashboard() {
@@ -15,23 +13,9 @@ export default function Dashboard() {
     "Redes y Comunicación",
   ];
   
-  const fetchModules = useCallback(async () => {
-    try {
-      const response = await axios.get(`/api/topics`);
-      console.log(response.data)
-    } catch (error) {
-      console.error("Error obteniendo módulos:", error);
-    }
-  }, []);
-
-    useEffect(() => {
-      fetchModules();
-    }, [fetchModules]);
-  
-
 
   return (
-    <ProtectedRoute allowedRoles={['ADMIN']}>
+    <ProtectedRoute allowedRoles={['STUDENT']}>
     <div className="p-8">
       <h1 className="text-3xl font-bold mb-6">Fundamentos en Informática</h1>
 
