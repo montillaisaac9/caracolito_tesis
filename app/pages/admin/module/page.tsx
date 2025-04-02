@@ -1,9 +1,9 @@
 "use client";
-
 import Spinner from "@/app/components/ui/common/progresBar";
 import api from "@/app/utils/api";
 import { useEffect, useState, useCallback } from "react";
 import useUserStore from "@/app/stores/useUserStore";
+import { useRouter } from "next/navigation"; // Cambiado de next/router a next/navigation
 
 interface ModuleData {
   id: string;
@@ -22,17 +22,18 @@ export default function ModulesAdmin() {
   const [limit] = useState(5); // Cantidad de módulos por página
   const [totalPages, setTotalPages] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false);
   const { user } = useUserStore();
-
+  const router = useRouter(); // Router de next/navigation
+  
   // Estados para el formulario
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [order, setOrder] = useState(1);
-
+  
   const fetchModules = useCallback(async () => {
     try {
-      setLoading(true)
+      setLoading(true);
       const response = await api.get(`/module?page=${page}&limit=${limit}`);
       if (response.status === 200 && response.data.data?.modules) {
         // Use the modules from the nested data structure
@@ -43,30 +44,28 @@ export default function ModulesAdmin() {
     } catch (error) {
       console.error("Error obteniendo módulos:", error);
       setModules([]);
-    }
-    finally {
-      setLoading(false)
+    } finally {
+      setLoading(false);
     }
   }, [page, limit]);
+  
   useEffect(() => {
     fetchModules();
   }, [fetchModules]);
-
+  
   const handleCreateModule = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
-
     try {
-      setLoading(true)
-      if (user){
-      await api.post("/module", {
-        title,
-        description,
-        order,
-        isActive: true,
-        createdById: user.id, // Reemplaza con el ID real del usuario
-      });
-    }
-
+      setLoading(true);
+      if (user) {
+        await api.post("/module", {
+          title,
+          description,
+          order,
+          isActive: true,
+          createdById: user.id, // Reemplaza con el ID real del usuario
+        });
+      }
       // Resetear formulario
       setTitle("");
       setDescription("");
@@ -76,10 +75,16 @@ export default function ModulesAdmin() {
     } catch (error) {
       console.error("Error al crear módulo:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   };
-
+  
+  // Función de navegación corregida
+  function navigate(id: string) {
+    // En App Router, la navegación funciona diferente
+    router.push(`/pages/admin/module/${id}`); // Cambiado para seguir la estructura de carpetas de App Router
+  }
+  
   return (
     <div className="p-8">
       {/* Botón para abrir el modal */}
@@ -90,7 +95,6 @@ export default function ModulesAdmin() {
       >
         + Crear Módulo
       </button>
-
       {/* Modal para crear módulos */}
       {isModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/70 bg-opacity-50">
@@ -136,7 +140,6 @@ export default function ModulesAdmin() {
           </div>
         </div>
       )}
-
       {/* Tabla de módulos */}
       <table className="w-full bg-white shadow-md rounded-lg overflow-hidden">
         <thead className="bg-gray-800 text-white">
@@ -147,30 +150,33 @@ export default function ModulesAdmin() {
           </tr>
         </thead>
         <tbody>
-        {!modules || modules.length === 0 ? (
-          <tr>
-            <td colSpan={3} className="text-center py-4">
-              No hay módulos disponibles
-            </td>
-          </tr>
-        ) : (
-          modules.map((mod, index) => (
-            <tr key={index} className="border-b">
-              <td className="py-2 px-4">{mod.title}</td>
-              <td className="py-2 px-4">{mod.description}</td>
-              <td className="py-2 px-4">{mod.order}</td>
+          {!modules || modules.length === 0 ? (
+            <tr>
+              <td colSpan={3} className="text-center py-4">
+                No hay módulos disponibles
+              </td>
             </tr>
-          ))
-        )}
+          ) : (
+            modules.map((mod, index) => (
+              <tr 
+                key={mod.id || index} 
+                onClick={() => navigate(mod.id)} 
+                className="border-b hover:bg-gray-100 cursor-pointer"
+              >
+                <td className="py-2 px-4">{mod.title}</td>
+                <td className="py-2 px-4">{mod.description}</td>
+                <td className="py-2 px-4">{mod.order}</td>
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
-
       {/* Paginación */}
       <div className="flex justify-center mt-4">
         <button
           disabled={page === 1}
           onClick={() => setPage(page - 1)}
-          className="px-3 py-1 border rounded-l bg-gray-200"
+          className="px-3 py-1 border rounded-l bg-gray-200 disabled:opacity-50"
         >
           Anterior
         </button>
@@ -178,7 +184,7 @@ export default function ModulesAdmin() {
         <button
           disabled={page === totalPages}
           onClick={() => setPage(page + 1)}
-          className="px-3 py-1 border rounded-r bg-gray-200"
+          className="px-3 py-1 border rounded-r bg-gray-200 disabled:opacity-50"
         >
           Siguiente
         </button>

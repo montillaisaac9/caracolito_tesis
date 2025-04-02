@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { NextResponse, NextRequest } from "next/server";
 import { message } from "../../helpers/responsesMsg";
 
@@ -13,7 +13,10 @@ export async function GET(req: NextRequest) {
         }
 
         client = await new PrismaClient()
-        const module = await client.module.findUnique({where:{id}})
+        const module = await client.module.findUnique(
+            {where:{id},
+            include: {topics}
+        })
 
         if(!module){
             return NextResponse.json(message({status:400,message:"recurso no encontrado",data:[], error:"recurso no encontrado"}))
