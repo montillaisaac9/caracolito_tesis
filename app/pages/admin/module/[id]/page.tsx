@@ -1,35 +1,39 @@
-// app/module/[id]/page.tsx
 "use client";
 
 import Spinner from "@/app/components/ui/common/progresBar";
 import api from "@/app/utils/api";
 import { useEffect, useState } from "react";
-import useUserStore from "@/app/stores/useUserStore";
 import { useParams } from "next/navigation";
 
+interface Module {
+  id: string;
+  title: string;
+  createdAt: string;
+  createdById: string;
+  description: string;
+  isActive: boolean;
+  order: number;
+  updatedAt: string;
+  topics: any[]; // Puedes definir mejor la estructura de `topics` si es necesario
+}
+
 export default function ModulePage() {
-  // Obtenemos el id de los parámetros de la URL
   const params = useParams();
-  const moduleId = params.id as string;
+  const moduleId = params?.id as string;
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useUserStore();
-  const [module, setModule] = useState(null);
+  const [module, setModule] = useState<Module | null>(null);
 
-  // Función para obtener los datos del módulo
   const fetchModule = async () => {
     try {
       setLoading(true);
       setError(null);
-      
-      // Hacemos la petición con el ID como parámetro de consulta
-      const response = await api.get(`/api/module?id=${moduleId}`);
-      
-      if (response.status === 200 && response.data.data?.length > 0) {
-        // Obtenemos el primer módulo del array de datos
-        console.log(response.data.data[0]);
-        setModule(response.data.data[0]);
+
+      const response = await api.get(`/module/${moduleId}`);
+
+      if (response.status === 200 && response.data.data?.module) {
+        setModule(response.data.data.module);
       } else {
         setError("No se encontró el módulo solicitado");
       }
@@ -47,7 +51,6 @@ export default function ModulePage() {
     }
   }, [moduleId]);
 
-  // Mostramos un spinner mientras carga
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -56,7 +59,6 @@ export default function ModulePage() {
     );
   }
 
-  // Mostramos un mensaje de error si ocurrió algún problema
   if (error) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -65,18 +67,32 @@ export default function ModulePage() {
     );
   }
 
-  // Mostramos los datos del módulo si está disponible
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Detalles del Módulo</h1>
-      
+
       {module ? (
         <div className="bg-white shadow-md rounded-lg p-6">
           <h2 className="text-xl font-semibold mb-2">ID: {module.id}</h2>
-          {module.name && (
-            <p className="mb-2"><span className="font-medium">Nombre:</span> {module.name}</p>
+          <p className="mb-2"><span className="font-medium">Título:</span> {module.title}</p>
+          <p className="mb-2"><span className="font-medium">Descripción:</span> {module.description}</p>
+          <p className="mb-2"><span className="font-medium">Creado por:</span> {module.createdById}</p>
+          <p className="mb-2"><span className="font-medium">Fecha de creación:</span> {new Date(module.createdAt).toLocaleString()}</p>
+          <p className="mb-2"><span className="font-medium">Última actualización:</span> {new Date(module.updatedAt).toLocaleString()}</p>
+          <p className="mb-2"><span className="font-medium">Estado:</span> {module.isActive ? "Activo" : "Inactivo"}</p>
+
+          {module.topics.length > 0 ? (
+            <div>
+              <h3 className="text-lg font-semibold mt-4">Temas:</h3>
+              <ul className="list-disc list-inside">
+                {module.topics.map((topic, index) => (
+                  <li key={index}>{topic.title}</li> // Ajusta según la estructura real de `topics`
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p className="mt-2 text-gray-500">No hay temas asociados.</p>
           )}
-          {/* Renderiza aquí el resto de los campos del módulo */}
         </div>
       ) : (
         <p>No hay datos disponibles para mostrar.</p>

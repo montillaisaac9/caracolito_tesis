@@ -64,7 +64,7 @@ export default function Sidebar({ links, isOpen, setIsOpen, onSelectLink }: Side
 
       {/* User profile section */}
       {isAuthenticated && (
-        <div className="mx-3 mb-6 mt-2">
+        <div className="mb-6 mt-2">
           <div className="flex items-center space-x-3 p-3 bg-gray-800 rounded-lg">
             {/* Avatar */}
             <div className={`${getRoleColor()} rounded-full w-10 h-10 flex items-center justify-center text-white font-medium`}>

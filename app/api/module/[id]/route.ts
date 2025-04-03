@@ -1,34 +1,64 @@
 import { PrismaClient } from "@prisma/client";
-import { NextResponse, NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { message } from "../../helpers/responsesMsg";
 
-export async function GET(req: NextRequest) {
-    let client;
-    try {
-        const seach = req.nextUrl.searchParams
-        const id = seach.get('id') || ""
-        
-        if(!id){
-            return NextResponse.json(message({status:400, message:"debe agregar un id",data:{},error:"id NO puede estar vacio"}))
-        }
+// Instancia global de Prisma para evitar múltiples conexiones
+const prisma = new PrismaClient();
 
-        client = await new PrismaClient()
-        const module = await client.module.findUnique(
-            {where:{id},
-            include: {topics}
+// Handler para GET
+export async function GET(
+  request: Request,
+  context: { params: { id?: string } }
+) {
+  try {
+    // Extraer los parámetros correctamente
+    const { id } = await context.params;
+
+    if (!id || id.trim() === "") {
+      return NextResponse.json(
+        message({
+          status: 400,
+          message: "Debe agregar un ID válido",
+          data: {},
+          error: "El ID no puede estar vacío",
         })
-
-        if(!module){
-            return NextResponse.json(message({status:400,message:"recurso no encontrado",data:[], error:"recurso no encontrado"}))
-        }
-
-        client.$disconnect()
-        return NextResponse.json(message({status:200,message:`recurso encontrado`, data:[module]}))
-
-    } catch (error) {
-        client?.$disconnect()
-        return NextResponse.json(
-            message({status:400, message:"error en endpoint de obtener un modulo", error})
-          ); 
+      );
     }
+
+    const module = await prisma.module.findUnique({
+      where: { id },
+      include: { topics: true },
+    });
+
+    console.log(module)
+
+    if (!module) {
+      return NextResponse.json(
+        message({
+          status: 404,
+          message: "Recurso no encontrado",
+          data: {},
+          error: "Recurso no encontrado",
+        })
+      );
+    }
+
+    return NextResponse.json(
+      message({
+        status: 200,
+        message: "Recurso encontrado",
+        data: { module },
+      })
+    );
+  } catch (error) {
+    console.error("Error en el endpoint de obtener un módulo:", error);
+    return NextResponse.json(
+      message({
+        status: 500,
+        message: "Error interno del servidor",
+        data: {},
+        error: error instanceof Error ? error.message : error,
+      })
+    );
+  }
 }
