@@ -82,7 +82,7 @@ export default function ModulesAdmin() {
   // Función de navegación corregida
   function navigate(id: string) {
     // En App Router, la navegación funciona diferente
-    router.push(`/pages/admin/module/${id}`); // Cambiado para seguir la estructura de carpetas de App Router
+    router.push(`/pages/dashboard/module/${id}`); // Cambiado para seguir la estructura de carpetas de App Router
   }
   
   return (

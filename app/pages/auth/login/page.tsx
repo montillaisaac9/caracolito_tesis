@@ -16,13 +16,6 @@ import { X } from "lucide-react";
 import Link from "next/link";
 import useUserStore from "@/app/stores/useUserStore";
 
-// Enum para los roles de usuario
-enum Role {
-  STUDENT = "STUDENT",
-  TEACHER = "TEACHER",
-  ADMIN = "ADMIN"
-}
-
 export default function LoginForm() {
   const [formData, setFormData] = useState({
     email: "",
@@ -68,18 +61,8 @@ export default function LoginForm() {
       }
 
       // Redirigimos según el rol del usuario
-      switch(user.role) {
-        case Role.TEACHER:
-          router.push("/pages/teacher");
-          break;
-        case Role.ADMIN:
-          router.push("/pages/admin");
-          break;
-        case Role.STUDENT:
-        default:
-          router.push("/pages/student");
-          break;
-      }
+        router.push("/pages/dashboard");
+      
       
     } catch (err) {
       console.error("Error de login:", err);

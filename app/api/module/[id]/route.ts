@@ -20,7 +20,10 @@ export async function GET(req: NextRequest) {
     }
 
     client = await new PrismaClient();
-    const myModule = await client.module.findUnique({ where: { id } });
+    const myModule = await client.module.findUnique({
+      where: { id },
+      include: { topics: true },
+    });
 
     if (!myModule) {
       return NextResponse.json(

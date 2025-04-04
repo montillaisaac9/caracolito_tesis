@@ -50,14 +50,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// {
-//     "title": "Introducción a TypeScript",
-//     "content": "Este es el contenido del tópico sobre TypeScript.",
-//     "order": 1,
-//     "moduleId": "cm8s65blh0005p4idi23d0204"
-//   }
-
-//Crear topicos
 export async function POST(req: Request) {
   let client;
   try {
