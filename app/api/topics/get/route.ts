@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(
         message({
           status: 400,
-          message: "debe agregar un id",
+          message: "debe agregar un ID",
           data: {},
           error: "id NO puede estar vacio",
         })
