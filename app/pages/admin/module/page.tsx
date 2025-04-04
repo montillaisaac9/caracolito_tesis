@@ -141,12 +141,12 @@ export default function ModulesAdmin() {
         </div>
       )}
       {/* Tabla de módulos */}
-      <table className="w-full bg-white shadow-md rounded-lg overflow-hidden">
+      <table className="w-full bg-white shadow-md rounded-lg border-s-stone-100 overflow-hidden">
         <thead className="bg-gray-800 text-white">
           <tr>
-            <th className="py-2 px-4">Título</th>
-            <th className="py-2 px-4">Descripción</th>
-            <th className="py-2 px-4">Orden</th>
+            <th className="py-2 px-4 border-1">Título</th>
+            <th className="py-2 px-4 border-1">Descripción</th>
+            <th className="py-2 px-4 border-1">Orden</th>
           </tr>
         </thead>
         <tbody>
@@ -163,9 +163,9 @@ export default function ModulesAdmin() {
                 onClick={() => navigate(mod.id)} 
                 className="border-b hover:bg-gray-100 cursor-pointer"
               >
-                <td className="py-2 px-4">{mod.title}</td>
-                <td className="py-2 px-4">{mod.description}</td>
-                <td className="py-2 px-4">{mod.order}</td>
+                <td className="py-2 px-4 border-1">{mod.title}</td>
+                <td className="py-2 px-4 border-1">{mod.description}</td>
+                <td className="py-2 px-4 border-1">{mod.order}</td>
               </tr>
             ))
           )}

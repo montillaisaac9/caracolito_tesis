@@ -1,63 +1,50 @@
 import { PrismaClient } from "@prisma/client";
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { message } from "../../helpers/responsesMsg";
 
-// Instancia global de Prisma para evitar múltiples conexiones
-const prisma = new PrismaClient();
-
-// Handler para GET
-export async function GET(
-  request: Request,
-  context: { params: { id?: string } }
-) {
+export async function GET(req: NextRequest) {
+  let client;
   try {
-    // Extraer los parámetros correctamente
-    const { id } = await context.params;
+    const seach = req.nextUrl.searchParams;
+    const id = seach.get("id") || "";
 
-    if (!id || id.trim() === "") {
+    if (!id) {
       return NextResponse.json(
         message({
           status: 400,
-          message: "Debe agregar un ID válido",
+          message: "debe agregar un id",
           data: {},
-          error: "El ID no puede estar vacío",
+          error: "id NO puede estar vacio",
         })
       );
     }
 
-    const module = await prisma.module.findUnique({
-      where: { id },
-      include: { topics: true },
-    });
+    client = await new PrismaClient();
+    const myModule = await client.module.findUnique({ where: { id } });
 
-    console.log(module)
-
-    if (!module) {
+    if (!myModule) {
       return NextResponse.json(
         message({
-          status: 404,
-          message: "Recurso no encontrado",
-          data: {},
-          error: "Recurso no encontrado",
+          status: 400,
+          message: "recurso no encontrado",
+          data: [],
+          error: "recurso no encontrado",
         })
       );
     }
 
+    client.$disconnect();
     return NextResponse.json(
-      message({
-        status: 200,
-        message: "Recurso encontrado",
-        data: { module },
-      })
+      message({ status: 200, message: `recurso encontrado`, data: [myModule] })
     );
   } catch (error) {
-    console.error("Error en el endpoint de obtener un módulo:", error);
+    client?.$disconnect();
+    console.log(error);
+
     return NextResponse.json(
       message({
-        status: 500,
-        message: "Error interno del servidor",
-        data: {},
-        error: error instanceof Error ? error.message : error,
+        status: 400,
+        message: "error en endpoint de obtener un modulo",
       })
     );
   }

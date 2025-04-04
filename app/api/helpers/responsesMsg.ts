@@ -1,19 +1,29 @@
-export function message({status,message,data, error}:{status:number,message:string, data?:any,error?:any}){
-    if(status == 200){
-        return {
-            status,    
-            message:message,
-            data
-        }
-    }
+import { CreateModuleResponse } from "@/app/types/response";
+import { ZodFormattedError } from "zod";
 
+interface messageParams {
+  status: number;
+  message: string;
+  data?: CreateModuleResponse | unknown;
+  error?: Error | ZodFormattedError<string> | string | unknown;
+}
+
+export function message({ status, message, data, error }: messageParams) {
+  if (status == 200) {
     return {
-        message,
-        status,
-        data:{
-            error,
-        }
-    }
+      status,
+      message: message,
+      data,
+    };
+  }
 
-    return 
+  return {
+    message,
+    status,
+    data: {
+      error,
+    },
+  };
+
+  return;
 }
