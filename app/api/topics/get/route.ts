@@ -22,6 +22,7 @@ export async function GET(req: NextRequest) {
     client = await new PrismaClient();
     const topic = await client.topic.findUnique({
       where: { id: id },
+      include: {activities: true}
     });
 
     if (!topic) {

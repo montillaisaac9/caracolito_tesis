@@ -2,7 +2,7 @@
 import Spinner from "@/app/components/ui/common/progresBar";
 import api from "@/app/utils/api";
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 interface Topic {
   id: string;
@@ -34,7 +34,7 @@ export default function ModulePage() {
   const [error, setError] = useState<string | null>(null);
   const [module, setModule] = useState<Module | null>(null);
   const [isTopicModalOpen, setIsTopicModalOpen] = useState(false);
-  
+  const router = useRouter();
   // Estados para el formulario de tópico
   const [topicTitle, setTopicTitle] = useState("");
   const [topicContent, setTopicContent] = useState("");
@@ -92,6 +92,10 @@ export default function ModulePage() {
       fetchModule();
     }
   }, [moduleId]);
+
+  function navitateTopics(id: string) {
+    router.push(`/pages/dashboard/topics/${id}`)
+  }
 
   if (loading && !module) {
     return (
@@ -151,7 +155,7 @@ export default function ModulePage() {
             {module.topics && module.topics.length > 0 ? (
               <div className="grid grid-cols-1 gap-4">
                 {module.topics.map((topic) => (
-                  <div key={topic.id} className="bg-gray-50 p-4 rounded-md border border-gray-200">
+                  <div key={topic.id}  onClick={() => navitateTopics(topic.id)} className="bg-gray-50 p-4 rounded-md border border-gray-200">
                     <div className="flex justify-between items-start">
                       <h4 className="font-medium text-lg">{topic.title}</h4>
                       <span className="text-sm text-gray-500">Orden: {topic.order}</span>
