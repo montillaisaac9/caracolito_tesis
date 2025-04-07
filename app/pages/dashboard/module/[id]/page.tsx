@@ -155,7 +155,11 @@ export default function ModulePage() {
             {module.topics && module.topics.length > 0 ? (
               <div className="grid grid-cols-1 gap-4">
                 {module.topics.map((topic) => (
-                  <div key={topic.id}  onClick={() => navitateTopics(topic.id)} className="bg-gray-50 p-4 rounded-md border border-gray-200">
+                  <div 
+                    key={topic.id}  
+                    onClick={() => navitateTopics(topic.id)} 
+                    className="bg-gray-50 p-4 rounded-md border border-gray-200 cursor-pointer hover:bg-gray-100"
+                  >
                     <div className="flex justify-between items-start">
                       <h4 className="font-medium text-lg">{topic.title}</h4>
                       <span className="text-sm text-gray-500">Orden: {topic.order}</span>

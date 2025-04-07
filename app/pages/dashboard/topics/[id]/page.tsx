@@ -4,6 +4,7 @@ import api from "@/app/utils/api";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ActivityType, DifficultyLevel } from "@prisma/client";
+import useUserStore from "@/app/stores/useUserStore";
 
 interface Activity {
   id: string;
@@ -37,8 +38,32 @@ interface ActivityFormData {
   type: ActivityType;
   difficulty: DifficultyLevel;
   config: {
-    words: string[];
-    gridSize: number;
+    instructions: string;
+    wordSearch?: {
+      words: string[];
+      gridSize: number;
+      allowDiagonal: boolean;
+      allowBackwards: boolean;
+    };
+    quiz?: {
+      question: string;
+      options: string[];
+      correctAnswer: number;
+      explanation: string;
+    };
+    matching?: {
+      pairs: {
+        left: string;
+        right: string;
+      }[];
+      shuffle: boolean;
+    };
+    exercise?: {
+      text: string;
+      correctAnswer: string;
+      caseSensitive: boolean;
+      allowPartial: boolean;
+    };
   };
   points: number;
   timeLimit: number;
@@ -54,15 +79,21 @@ export default function Topic() {
   const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
   const [wordErrors, setWordErrors] = useState<string[]>([]);
   const MAX_WORDS = 10;
-  
+  const { user } = useUserStore();
+
   // Estados para el formulario de actividad
   const [activityForm, setActivityForm] = useState<ActivityFormData>({
     title: "",
     type: ActivityType.WORD_SEARCH,
     difficulty: DifficultyLevel.BEGINNER,
     config: {
-      words: [""],
-      gridSize: 10
+      instructions: "Encuentra las palabras en la sopa de letras",
+      wordSearch: {
+        words: [""],
+        gridSize: 10,
+        allowDiagonal: true,
+        allowBackwards: true
+      }
     },
     points: 10,
     timeLimit: 300,
@@ -91,12 +122,12 @@ export default function Topic() {
   };
 
   function navigateToActivity(id: string) {
-    router.push(`/pages/dashboard/activity/${id}`);
+    router.push(`/pages/dashboard/activities/${id}`);
   }
 
   const validateWordLengths = () => {
     const { difficulty, config } = activityForm;
-    const newErrors = [...config.words].map((word, index) => {
+    const newErrors = [...config.wordSearch?.words || []].map((word) => {
       if (!word.trim()) return "La palabra no puede estar vacía";
       
       const wordLength = word.trim().length;
@@ -129,9 +160,22 @@ export default function Topic() {
     try {
       setLoading(true);
       
+      // Ensure wordSearch config is properly initialized
+      const config = {
+        ...activityForm.config,
+        wordSearch: activityForm.config.wordSearch || {
+          words: [""],
+          gridSize: 10,
+          allowDiagonal: true,
+          allowBackwards: true
+        }
+      };
+      
       await api.post("/activities", {
         ...activityForm,
-        topicId: topicId
+        config,
+        topicId: topicId,
+        createdById: user?.id
       });
       
       // Resetear formulario
@@ -140,8 +184,13 @@ export default function Topic() {
         type: ActivityType.WORD_SEARCH,
         difficulty: DifficultyLevel.BEGINNER,
         config: {
-          words: [""],
-          gridSize: 10
+          instructions: "Encuentra las palabras en la sopa de letras",
+          wordSearch: {
+            words: [""],
+            gridSize: 10,
+            allowDiagonal: true,
+            allowBackwards: true
+          }
         },
         points: 10,
         timeLimit: 300,
@@ -161,13 +210,18 @@ export default function Topic() {
   };
 
   const handleWordChange = (index: number, value: string) => {
-    const newWords = [...activityForm.config.words];
+    if (!activityForm.config.wordSearch) return;
+    
+    const newWords = [...activityForm.config.wordSearch.words];
     newWords[index] = value;
     setActivityForm({
       ...activityForm,
       config: {
         ...activityForm.config,
-        words: newWords
+        wordSearch: {
+          ...activityForm.config.wordSearch,
+          words: newWords
+        }
       }
     });
     
@@ -198,7 +252,7 @@ export default function Topic() {
     setActivityForm({...activityForm, difficulty});
     
     // Revalidar palabras existentes con la nueva dificultad
-    const newErrors = [...activityForm.config.words].map((word, index) => {
+    const newErrors = [...activityForm.config.wordSearch?.words || []].map((word) => {
       if (!word.trim()) return "La palabra no puede estar vacía";
       
       const wordLength = word.trim().length;
@@ -220,7 +274,8 @@ export default function Topic() {
   };
 
   const addWordField = () => {
-    if (activityForm.config.words.length >= MAX_WORDS) {
+    if (!activityForm.config.wordSearch) return;
+    if (activityForm.config.wordSearch.words.length >= MAX_WORDS) {
       return; // No permitir más de MAX_WORDS palabras
     }
     
@@ -228,7 +283,10 @@ export default function Topic() {
       ...activityForm,
       config: {
         ...activityForm.config,
-        words: [...activityForm.config.words, ""]
+        wordSearch: {
+          ...activityForm.config.wordSearch,
+          words: [...activityForm.config.wordSearch.words, ""]
+        }
       }
     });
     
@@ -237,13 +295,18 @@ export default function Topic() {
   };
 
   const removeWordField = (index: number) => {
-    const newWords = [...activityForm.config.words];
+    if (!activityForm.config.wordSearch) return;
+    
+    const newWords = [...activityForm.config.wordSearch.words];
     newWords.splice(index, 1);
     setActivityForm({
       ...activityForm,
       config: {
         ...activityForm.config,
-        words: newWords
+        wordSearch: {
+          ...activityForm.config.wordSearch,
+          words: newWords
+        }
       }
     });
     
@@ -427,67 +490,91 @@ export default function Topic() {
                 />
               </div>
               
+              {activityForm.type === ActivityType.WORD_SEARCH && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tamaño de la cuadrícula</label>
+                  <input
+                    type="number"
+                    placeholder="Tamaño de la cuadrícula"
+                    value={activityForm.config.wordSearch?.gridSize || 10}
+                    onChange={(e) => setActivityForm({
+                      ...activityForm, 
+                      config: {
+                        ...activityForm.config,
+                        wordSearch: {
+                          ...activityForm.config.wordSearch!,
+                          gridSize: Number(e.target.value)
+                        }
+                      }
+                    })}
+                    className="w-full border p-2 rounded focus:ring-blue-500 focus:border-blue-500"
+                    min="5"
+                    max="20"
+                    required
+                  />
+                </div>
+              )}
+              
+              {activityForm.type === ActivityType.WORD_SEARCH && (
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Palabras ({activityForm.config.wordSearch?.words?.length || 0}/{MAX_WORDS})
+                    </label>
+                    <button 
+                      type="button" 
+                      onClick={addWordField}
+                      disabled={(activityForm.config.wordSearch?.words?.length || 0) >= MAX_WORDS}
+                      className={`text-xs ${(activityForm.config.wordSearch?.words?.length || 0) >= MAX_WORDS ? 'bg-gray-400' : 'bg-blue-500 hover:bg-blue-600'} text-white px-2 py-1 rounded`}
+                    >
+                      + Añadir palabra
+                    </button>
+                  </div>
+                  
+                  {activityForm.config.wordSearch?.words?.map((word, index) => (
+                    <div key={`word-${index}`} className="mb-2">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          placeholder={`Palabra ${index + 1}`}
+                          value={word}
+                          onChange={(e) => handleWordChange(index, e.target.value)}
+                          className={`w-full border p-2 rounded focus:ring-blue-500 focus:border-blue-500 ${wordErrors[index] ? 'border-red-500' : ''}`}
+                          required
+                        />
+                        {(activityForm.config.wordSearch?.words?.length || 0) > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeWordField(index)}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                      {wordErrors[index] && (
+                        <p className="text-red-500 text-xs mt-1">{wordErrors[index]}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tamaño de la cuadrícula</label>
-                <input
-                  type="number"
-                  placeholder="Tamaño de la cuadrícula"
-                  value={activityForm.config.gridSize}
+                <label className="block text-sm font-medium text-gray-700 mb-1">Instrucciones</label>
+                <textarea
+                  placeholder="Instrucciones para la actividad"
+                  value={activityForm.config.instructions}
                   onChange={(e) => setActivityForm({
-                    ...activityForm, 
+                    ...activityForm,
                     config: {
                       ...activityForm.config,
-                      gridSize: Number(e.target.value)
+                      instructions: e.target.value
                     }
                   })}
                   className="w-full border p-2 rounded focus:ring-blue-500 focus:border-blue-500"
-                  min="5"
-                  max="20"
                   required
                 />
-              </div>
-              
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Palabras ({activityForm.config.words.length}/{MAX_WORDS})
-                  </label>
-                  <button 
-                    type="button" 
-                    onClick={addWordField}
-                    disabled={activityForm.config.words.length >= MAX_WORDS}
-                    className={`text-xs ${activityForm.config.words.length >= MAX_WORDS ? 'bg-gray-400' : 'bg-blue-500 hover:bg-blue-600'} text-white px-2 py-1 rounded`}
-                  >
-                    + Añadir palabra
-                  </button>
-                </div>
-                
-                {activityForm.config.words.map((word, index) => (
-                  <div key={`word-${index}`} className="mb-2">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        placeholder={`Palabra ${index + 1}`}
-                        value={word}
-                        onChange={(e) => handleWordChange(index, e.target.value)}
-                        className={`w-full border p-2 rounded focus:ring-blue-500 focus:border-blue-500 ${wordErrors[index] ? 'border-red-500' : ''}`}
-                        required
-                      />
-                      {activityForm.config.words.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeWordField(index)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </div>
-                    {wordErrors[index] && (
-                      <p className="text-red-500 text-xs mt-1">{wordErrors[index]}</p>
-                    )}
-                  </div>
-                ))}
               </div>
               
               <div className="flex items-center gap-2 mt-2">

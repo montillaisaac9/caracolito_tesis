@@ -18,16 +18,15 @@ export async function POST(req: Request) {
     // Parsear y validar datos del request con Zod
     const body = await req.json();
     const parsedData = loginSchema.safeParse(body);
-    
+    console.log(parsedData)
     if (!parsedData.success) {
-      return NextResponse.json({ error: parsedData.error.format() }, { status: 400 });
+      return NextResponse.json({ error: parsedData.error.message }, { status: 400 });
     }
 
     const { email, password } = parsedData.data;
 
     // Buscar usuario en la base de datos
     const user = await prisma.user.findUnique({ where: { email } });
-    
     if (!user || user.password !== password) {
       return NextResponse.json({ error: "Correo o contraseña incorrectos" }, { status: 401 });
     }
