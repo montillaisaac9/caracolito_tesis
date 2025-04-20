@@ -1,45 +1,20 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import api from "@/app/utils/api";
-import Spinner from "@/app/components/ui/common/progresBar";
+'use client'
 import { ActivityType, DifficultyLevel } from "@prisma/client";
+import api from "@/app/utils/api";
 import useUserStore from "@/app/stores/useUserStore";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState, useRef } from "react";
+import Spinner from "@/app/components/ui/common/progresBar";
+import { generateWordSearchGrid } from "@/app/utils/wordSearchGenerator";
+import useWordSearchStore from "@/app/stores/useWordSearchStore";
+import WordSearch from "./[id]/components/WordSearch";
 
 interface Activity {
   id: string;
   title: string;
   type: ActivityType;
   difficulty: DifficultyLevel;
-  config: {
-    instructions: string;
-    wordSearch?: {
-      words: string[];
-      gridSize: number;
-      allowDiagonal: boolean;
-      allowBackwards: boolean;
-    };
-    quiz?: {
-      question: string;
-      options: string[];
-      correctAnswer: number;
-      explanation: string;
-    };
-    matching?: {
-      pairs: {
-        left: string;
-        right: string;
-      }[];
-      shuffle: boolean;
-    };
-    exercise?: {
-      text: string;
-      correctAnswer: string;
-      caseSensitive: boolean;
-      allowPartial: boolean;
-    };
-  };
+  config: any;
   points: number;
   timeLimit: number | null;
   isActive: boolean;
@@ -47,237 +22,531 @@ interface Activity {
   updatedAt: string;
   topicId: string;
   createdById: string;
-  topic: {
-    id: string;
-    title: string;
-    module: {
-      id: string;
-      title: string;
-    };
-  };
-  createdBy: {
-    id: string;
-    name: string;
-    email: string;
-  };
 }
 
-export default function ActivitiesPage() {
+interface WordSearchConfig {
+  wordSearch: {
+    words: string[];
+    gridSize: number;
+    allowDiagonal: boolean;
+    allowBackwards: boolean;
+  };
+  instructions: string;
+}
+
+interface WordSearchGameData {
+  grid: string[][];
+  placedWords: {
+    word: string;
+    startRow: number;
+    startCol: number;
+    endRow: number;
+    endCol: number;
+    backwards: boolean;
+  }[];
+  words: string[];
+}
+
+interface MatchingConfig {
+  matching: {
+    pairs: {
+      left: string;
+      right: string;
+    }[];
+    shuffle: boolean;
+  };
+  instructions: string;
+}
+
+interface MatchingGameData {
+  leftItems: {
+    id: string;
+    content: string;
+    originalIndex: number;
+  }[];
+  rightItems: {
+    id: string;
+    content: string;
+    originalIndex: number;
+  }[];
+  pairs: {
+    left: string;
+    right: string;
+  }[];
+}
+
+export interface ProgressCreate {
+  studentId: string;
+  activityId: string;
+  score?: number;          // Default: 0 si no se envía
+  completed?: boolean;     // Default: false si no se envía
+  timeSpent?: number;      // Optional
+  attempts?: number;       // Default: 0 si no se envía
+  lastAttempt?: Date;      // Optional
+  feedback?: string;       // Optional, max 500 chars
+}
+
+export default function Activities() {
+  const params = useParams();
   const router = useRouter();
-  const { user } = useUserStore();
-  const [activities, setActivities] = useState<Activity[]>([]);
+  const activityId = params?.id as string;
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useState({
-    type: "",
-    difficulty: "",
-    isActive: true,
-    createdById: user?.id || ""
+  const [error, setError] = useState(null);
+  const [activity, setActivity] = useState<Activity | null>(null);
+  const { user } = useUserStore();
+  
+  const [gameData, setGameData] = useState<any>(null);
+  const [gameStarted, setGameStarted] = useState(false);
+  const [gameCompleted, setGameCompleted] = useState(false);
+  const [score, setScore] = useState(0);
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
+  const [progressId, setProgressId] = useState(null);
+  
+  // Estado del juego de WordSearch desde Zustand
+  const { gameCompleted: wsGameCompleted } = useWordSearchStore();
+  
+  // Para compatibilidad con otros tipos de juegos que no usan Zustand todavía
+  const gameCompletedRef = useRef(false);
+  const gameStateRef = useRef({
+    matches: {} as Record<string, any>,
   });
-
-  const fetchActivities = async () => {
+  
+  useEffect(() => {
+    const fetchActivity = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const response = await api.get(`/activities?id=${activityId}`);
+        if (response.status === 200 && response.data.data) {
+          setActivity(response.data.data);
+          
+          if (response.data.data.timeLimit) {
+            setTimeRemaining(response.data.data.timeLimit);
+          }
+        } else {
+          console.log(response);
+          setError("No se encontró la actividad solicitada");
+        }
+      } catch (error) {
+        console.error("Error obteniendo la actividad:", error);
+        setError("Error al cargar los datos de la actividad");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (activityId) {
+      fetchActivity();
+    }
+  }, [activityId]);
+  
+  useEffect(() => {
+    // Set up timer if game has started and there's a time limit
+    let timer: NodeJS.Timeout | null = null;
+    
+    if (gameStarted && timeRemaining !== null && timeRemaining > 0) {
+      timer = setInterval(() => {
+        setTimeRemaining((prev) => {
+          if (prev === null || prev <= 1) {
+            clearInterval(timer as NodeJS.Timeout);
+            setGameCompleted(true);
+            gameCompletedRef.current = true;
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    
+    return () => {
+      if (timer) {
+        clearInterval(timer);
+      }
+    };
+  }, [gameStarted, timeRemaining]);
+  
+  // Function to generate matching game
+  const generateMatchingGame = (config: MatchingConfig): MatchingGameData => {
+    const { matching } = config;
+    let { pairs, shuffle } = matching;
+    
+    if (shuffle) {
+      // Create a shuffled copy of the pairs
+      const shuffledPairs = [...pairs];
+      for (let i = shuffledPairs.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffledPairs[i], shuffledPairs[j]] = [shuffledPairs[j], shuffledPairs[i]];
+      }
+      pairs = shuffledPairs;
+    }
+    
+    // Create left and right sides (shuffled independently)
+    const leftItems = pairs.map((pair, index) => ({
+      id: `left-${index}`,
+      content: pair.left,
+      originalIndex: index
+    }));
+    
+    const rightItems = pairs.map((pair, index) => ({
+      id: `right-${index}`,
+      content: pair.right,
+      originalIndex: index
+    }));
+    
+    // Shuffle right items
+    for (let i = rightItems.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [rightItems[i], rightItems[j]] = [rightItems[j], rightItems[i]];
+    }
+    
+    return {
+      leftItems,
+      rightItems,
+      pairs
+    };
+  };
+  
+  // Function to save progress
+  const saveProgress = async () => {
+    if (!activity || !user?.id) return;
     try {
-      setLoading(true);
-      setError(null);
+      // Para juegos de tipo word search, obtenemos el estado desde Zustand
+      let gameState = {};
+      let gameComplete = gameCompleted;
       
-      // Construir query params
-      const queryParams = new URLSearchParams();
-      if (filters.type) queryParams.append("type", filters.type);
-      if (filters.difficulty) queryParams.append("difficulty", filters.difficulty);
-      if (filters.isActive !== undefined) queryParams.append("isActive", filters.isActive.toString());
-      if (filters.createdById) queryParams.append("createdById", filters.createdById);
-
-      const response = await api.get(`/activities?${queryParams.toString()}`);
-      
-      if (response.status === 200) {
-        setActivities(response.data.data);
+      if (activity.type === 'WORD_SEARCH') {
+        const wordSearchStore = useWordSearchStore.getState();
+        gameState = {
+          foundWords: wordSearchStore.foundWords,
+          disabledCells: wordSearchStore.disabledCells,
+          selectionHistory: wordSearchStore.selectionHistory
+        };
+        gameComplete = wordSearchStore.gameCompleted || gameCompleted;
       } else {
-        setError("Error al cargar las actividades");
+        // Para otros tipos de juegos seguimos usando la referencia
+        gameState = gameStateRef.current;
+        gameComplete = gameCompletedRef.current || gameCompleted;
+      }
+      
+      const progressData: ProgressCreate = {
+        studentId: user.id,
+        activityId: activity.id,
+        score: score,
+        completed: gameComplete,
+        timeSpent: activity.timeLimit ? (activity.timeLimit - (timeRemaining || 0)) : undefined,
+        attempts: 1,
+        lastAttempt: new Date(),
+        feedback: JSON.stringify({
+          gameState: gameState,
+          gameData: gameData
+        })
+      };
+      
+      if (progressId) {
+        console.log("Guardando progreso:", progressData);
+        // await api.post(`/progress`, progressData);
+      } else {
+        console.log("Guardando nuevo progreso:", progressData);
+        // const response = await api.post(`/progress`, progressData);
+        // setProgressId(response.data.id);
       }
     } catch (error) {
-      console.error("Error fetching activities:", error);
-      setError("Error al cargar las actividades");
-    } finally {
-      setLoading(false);
+      console.log(error);
+      alert("Error al guardar el progreso. Por favor, inténtelo de nuevo.");
+      console.error("Error saving progress:", error);
     }
   };
-
+  
+  // Save progress when game is completed or time runs out
   useEffect(() => {
-    fetchActivities();
-  }, [filters]);
-
-  const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
-    const { name, value, type } = e.target;
-    setFilters(prev => ({
-      ...prev,
-      [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value
-    }));
-  };
-
-  const navigateToActivity = (id: string) => {
-    router.push(`/pages/dashboard/activity/${id}`);
-  };
-
-  const getActivityTypeLabel = (type: ActivityType) => {
-    switch (type) {
-      case "WORD_SEARCH":
-        return "Sopa de Letras";
-      case "QUIZ":
-        return "Quiz";
-      case "MATCHING":
-        return "Emparejamiento";
-      case "EXERCISE":
-        return "Ejercicio";
-      default:
-        return type;
+    if (gameCompleted || (timeRemaining === 0 && gameStarted)) {
+      saveProgress();
     }
-  };
-
-  const getDifficultyLabel = (difficulty: DifficultyLevel) => {
-    switch (difficulty) {
-      case "BEGINNER":
-        return "Principiante";
-      case "INTERMEDIATE":
-        return "Intermedio";
-      case "ADVANCED":
-        return "Avanzado";
-      default:
-        return difficulty;
+  }, [gameCompleted, timeRemaining, gameStarted]);
+  
+  // También guardar progreso cuando cambia el estado de completado en el WordSearch store
+  useEffect(() => {
+    if (wsGameCompleted && activity?.type === 'WORD_SEARCH') {
+      setGameCompleted(true);
+      saveProgress();
     }
+  }, [wsGameCompleted, activity?.type]);
+  
+  const startGame = () => {
+    if (!activity) return;
+    
+    let generatedGameData;
+    
+    switch (activity.type) {
+      case 'WORD_SEARCH':
+        const wordSearchConfig = activity.config as unknown as WordSearchConfig;
+        generatedGameData = generateWordSearchGrid(wordSearchConfig);
+        break;
+      case 'MATCHING':
+        const matchingConfig = activity.config as unknown as MatchingConfig;
+        generatedGameData = generateMatchingGame(matchingConfig);
+        break;
+      default:
+        setError(`Tipo de actividad no soportado: ${activity.type}`);
+        return;
+    }
+    
+    setGameData(generatedGameData);
+    setGameStarted(true);
+    setGameCompleted(false);
+    gameCompletedRef.current = false;
+    setScore(0);
+    setProgressId(null);
   };
-
-  if (loading && !activities.length) {
+  
+  const completeGame = () => {
+    // Avoid completing the game multiple times
+    if (gameCompletedRef.current) return;
+    
+    // Calculate score based on activity and game state
+    let finalScore = 0;
+    
+    if (activity && gameData) {
+      switch (activity.type) {
+        case 'WORD_SEARCH':
+          // For simplicity, award full points if game is completed
+          finalScore = activity.points;
+          break;
+        case 'MATCHING':
+          // Award points based on correct matches
+          finalScore = activity.points;
+          break;
+      }
+    }
+    
+    setScore(finalScore);
+    setGameCompleted(true);
+    gameCompletedRef.current = true;
+    
+    // Save final progress
+    saveProgress();
+  };
+  
+  const MatchingGame = () => {
+    const [selectedLeft, setSelectedLeft] = useState<number | null>(null);
+    const [selectedRight, setSelectedRight] = useState(null);
+    const [matches, setMatches] = useState<Record<string, any>>({});
+    
+    // Update game state ref
+    useEffect(() => {
+      gameStateRef.current = {
+        ...gameStateRef.current,
+        matches
+      };
+    }, [matches]);
+    
+    if (!gameData || activity?.type !== 'MATCHING') return null;
+    
+    const matchingData = gameData as MatchingGameData;
+    const { leftItems, rightItems, pairs } = matchingData;
+    
+    const handleLeftSelection = (index: number) => {
+      if (gameCompletedRef.current || index.toString() in gameStateRef.current.matches) return;
+      
+      setSelectedLeft(index);
+      
+      // Check for match if right item is already selected
+      if (selectedRight !== null) {
+        checkForMatch(index, selectedRight);
+      }
+    };
+    
+    const handleRightSelection = (index: number) => {
+      if (gameCompletedRef.current || Object.values(gameStateRef.current.matches).includes(index)) return;
+      
+      setSelectedRight(index);
+      
+      // Check for match if left item is already selected
+      if (selectedLeft !== null) {
+        checkForMatch(selectedLeft, index);
+      }
+    };
+    
+    const checkForMatch = (leftIndex: number, rightIndex: number) => {
+      const leftItem = leftItems[leftIndex];
+      const rightItem = rightItems[rightIndex];
+      
+      // Check if the indices match in the original pairs
+      if (leftItem.originalIndex === rightItem.originalIndex) {
+        // Correct match!
+        const newMatches = { ...gameStateRef.current.matches, [leftIndex]: rightIndex };
+        setMatches(newMatches);
+        gameStateRef.current.matches = newMatches;
+        
+        // Save progress after correct match
+        saveProgress();
+        
+        // Check if all pairs are matched
+        if (Object.keys(newMatches).length === pairs.length && !gameCompletedRef.current) {
+          // Use setTimeout to ensure state updates before completing
+          setTimeout(() => {
+            completeGame();
+          }, 300);
+        }
+      } else {
+        // Reset selections if match is incorrect
+        setSelectedLeft(null);
+        setSelectedRight(null);
+      }
+    };
+    
     return (
-      <div className="flex justify-center items-center h-screen">
-        <Spinner isLoading={true} />
+      <div className="matching-game">
+        <h2>Juego de Emparejamiento</h2>
+        <p>{activity?.config?.instructions}</p>
+        
+        <div className="matching-columns">
+          <div className="left-column">
+            <h3>Columna A</h3>
+            {leftItems.map((item, index) => {
+              const isMatched = index.toString() in gameStateRef.current.matches;
+              const isSelected = selectedLeft === index;
+              
+              return (
+                <button 
+                  key={item.id} 
+                  className={`item-button ${isMatched ? 'matched' : ''} ${isSelected ? 'selected' : ''}`}
+                  onClick={() => handleLeftSelection(index)}
+                  disabled={isMatched || gameCompletedRef.current}
+                >
+                  {item.content}
+                </button>
+              );
+            })}
+          </div>
+          
+          <div className="right-column">
+            <h3>Columna B</h3>
+            {rightItems.map((item, index) => {
+              const isMatched = Object.values(gameStateRef.current.matches).includes(index);
+              const isSelected = selectedRight === index;
+              
+              return (
+                <button 
+                  key={item.id} 
+                  className={`item-button ${isMatched ? 'matched' : ''} ${isSelected ? 'selected' : ''}`}
+                  onClick={() => handleRightSelection(index)}
+                  disabled={isMatched || gameCompletedRef.current}
+                >
+                  {item.content}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        
+        <div className="matching-progress">
+          <p>Emparejados: {Object.keys(gameStateRef.current.matches).length} de {pairs.length}</p>
+        </div>
+      </div>
+    );
+  };
+  
+  const renderActivityGame = () => {
+    if (!activity || !gameData) return null;
+    
+    switch (activity.type) {
+      case 'WORD_SEARCH':
+        return <WordSearch 
+          gameData={gameData as WordSearchGameData} 
+          activityId={activity.id}
+          onComplete={completeGame}
+        />;
+      case 'MATCHING':
+        return <MatchingGame />;
+      default:
+        return (
+          <div className="error-message">
+            <p>Tipo de actividad no soportado: {activity.type}</p>
+          </div>
+        );
+    }
+  };
+  
+  const renderActivityDetails = () => {
+    if (!activity) return null;
+    
+    return (
+      <div className="activity-details">
+        <h1>{activity.title}</h1>
+        
+        <div className="activity-info">
+          <div className="activity-metadata">
+            <p>Tipo: {activity.type}</p>
+            <p>Dificultad: {activity.difficulty}</p>
+            <p>Puntos: {activity.points}</p>
+            {activity.timeLimit && (
+              <p>Tiempo límite: {activity.timeLimit} segundos</p>
+            )}
+          </div>
+          <div className="activity-dates">
+            <p>Activo: {activity.isActive ? 'Sí' : 'No'}</p>
+            <p>Creado: {new Date(activity.createdAt).toLocaleDateString()}</p>
+            <p>Actualizado: {new Date(activity.updatedAt).toLocaleDateString()}</p>
+          </div>
+        </div>
+        
+        {user?.role === 'STUDENT' && activity.isActive && !gameStarted && (
+          <button className="start-button" onClick={startGame}>
+            Comenzar Actividad
+          </button>
+        )}
+        
+        {gameCompleted && (
+          <div className="game-completed">
+            <h2>¡Actividad Completada!</h2>
+            <p>Puntuación: {score} puntos</p>
+            <button className="return-button" onClick={() => router.push('/activities')}>
+              Volver a Actividades
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+  
+  if (loading && !activity) {
+    return (
+      <div className="loading-container">
+        <Spinner isLoading={false} />
       </div>
     );
   }
-
+  
+  if (error && !activity) {
+    return (
+      <div className="error-container">
+        {error}
+      </div>
+    );
+  }
+  
   return (
-    <div className="container mx-auto p-4">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Actividades</h1>
-        <button
-          onClick={() => router.push("/pages/dashboard/activities/new")}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
-        >
-          + Nueva Actividad
-        </button>
-      </div>
-
-      {/* Filtros */}
-      <div className="bg-white p-4 rounded-lg shadow mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-            <select
-              name="type"
-              value={filters.type}
-              onChange={handleFilterChange}
-              className="w-full border p-2 rounded focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">Todos</option>
-              <option value="WORD_SEARCH">Sopa de Letras</option>
-              <option value="QUIZ">Quiz</option>
-              <option value="MATCHING">Emparejamiento</option>
-              <option value="EXERCISE">Ejercicio</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Dificultad</label>
-            <select
-              name="difficulty"
-              value={filters.difficulty}
-              onChange={handleFilterChange}
-              className="w-full border p-2 rounded focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">Todas</option>
-              <option value="BEGINNER">Principiante</option>
-              <option value="INTERMEDIATE">Intermedio</option>
-              <option value="ADVANCED">Avanzado</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-            <select
-              name="isActive"
-              value={filters.isActive.toString()}
-              onChange={handleFilterChange}
-              className="w-full border p-2 rounded focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="true">Activas</option>
-              <option value="false">Inactivas</option>
-            </select>
-          </div>
-
-          <div className="flex items-end">
-            <button
-              onClick={() => setFilters({
-                type: "",
-                difficulty: "",
-                isActive: true,
-                createdById: user?.id || ""
-              })}
-              className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md w-full"
-            >
-              Limpiar Filtros
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Lista de Actividades */}
-      {error ? (
-        <div className="text-red-500 text-center">{error}</div>
-      ) : activities.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {activities.map((activity) => (
-            <div
-              key={activity.id}
-              onClick={() => navigateToActivity(activity.id)}
-              className="bg-white p-4 rounded-lg shadow cursor-pointer hover:shadow-lg transition-shadow"
-            >
-              <div className="flex justify-between items-start mb-2">
-                <h3 className="text-lg font-semibold">{activity.title}</h3>
-                <span className={`px-2 py-1 text-xs rounded-full ${
-                  activity.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                }`}>
-                  {activity.isActive ? "Activa" : "Inactiva"}
-                </span>
+    <div className="activity-container">
+      {renderActivityDetails()}
+      
+      {user?.role === 'STUDENT' && gameStarted && !gameCompleted && (
+        <div className="game-container">
+          {timeRemaining !== null && (
+            <div className="timer">
+              <div className="time-display">
+                Tiempo restante: {Math.floor(timeRemaining / 60)}:{String(timeRemaining % 60).padStart(2, '0')}
               </div>
-
-              <div className="flex flex-wrap gap-2 mb-2">
-                <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
-                  {getActivityTypeLabel(activity.type)}
-                </span>
-                <span className="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800">
-                  {getDifficultyLabel(activity.difficulty)}
-                </span>
-                <span className="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">
-                  {activity.points} puntos
-                </span>
-              </div>
-
-              <div className="text-sm text-gray-600 mb-2">
-                <p>Tema: {activity.topic.title}</p>
-                <p>Módulo: {activity.topic.module.title}</p>
-              </div>
-
-              <div className="text-xs text-gray-500">
-                <p>Creado por: {activity.createdBy.name}</p>
-                <p>Última actualización: {new Date(activity.updatedAt).toLocaleDateString()}</p>
+              <div className="time-progress">
+                <div className="progress-bar"></div>
               </div>
             </div>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center text-gray-500">
-          No se encontraron actividades con los filtros seleccionados
+          )}
+          
+          {renderActivityGame()}
         </div>
       )}
     </div>
   );
-} 
+}

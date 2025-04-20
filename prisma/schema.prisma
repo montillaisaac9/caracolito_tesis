@@ -109,9 +109,7 @@ enum Role {
 
 enum ActivityType {
   WORD_SEARCH
-  QUIZ
   MATCHING
-  EXERCISE
 }
 
 enum DifficultyLevel {

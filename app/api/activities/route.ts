@@ -5,43 +5,31 @@ import { NextResponse } from "next/server";
 const prisma = new PrismaClient();
 
 const ActivitySchema = z.object({
-  title: z.string({required_error: "El título es obligatorio",}).min(1, "El título no puede estar vacío").max(100, "El título no puede exceder 100 caracteres"),
+  title: z.string({required_error: "El título es obligatorio"}).min(1, "El título no puede estar vacío").max(100, "El título no puede exceder 100 caracteres"),
   type: z.enum(["WORD_SEARCH", "QUIZ", "MATCHING", "EXERCISE"], {required_error: "El tipo de actividad es obligatorio"}),
   difficulty: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED"]).default("BEGINNER"),
   config: z.object({
     instructions: z.string().min(1, "Las instrucciones son obligatorias"),
     wordSearch: z.object({
-      words: z.array(z.string().min(1, "Las palabras no pueden estar vacías")),
-      gridSize: z.number().int().min(5).max(20),
-      allowDiagonal: z.boolean(),
-      allowBackwards: z.boolean()
-    }).optional(),
-    quiz: z.object({
-      question: z.string().min(1, "La pregunta es obligatoria"),
-      options: z.array(z.string().min(1, "Las opciones no pueden estar vacías")).min(2, "Debe haber al menos 2 opciones"),
-      correctAnswer: z.number().int().min(0, "La respuesta correcta debe ser un índice válido"),
-      explanation: z.string().min(1, "La explicación es obligatoria")
+      words: z.array(z.string().min(1, "Las palabras no pueden estar vacías")).min(1, "Debe haber al menos una palabra"),
+      gridSize: z.number().int("El tamaño de la cuadrícula debe ser un entero").min(5, "El tamaño mínimo de la cuadrícula es 5").max(20, "El tamaño máximo de la cuadrícula es 20"),
+      allowDiagonal: z.boolean().default(false),
+      allowBackwards: z.boolean().default(false)
     }).optional(),
     matching: z.object({
-      pairs: z.array(z.object({
-        left: z.string().min(1, "El lado izquierdo no puede estar vacío"),
-        right: z.string().min(1, "El lado derecho no puede estar vacío")
-      })).min(2, "Debe haber al menos 2 pares"),
-      shuffle: z.boolean()
-    }).optional(),
-    exercise: z.object({
-      text: z.string().min(1, "El texto es obligatorio"),
-      correctAnswer: z.string().min(1, "La respuesta correcta es obligatoria"),
-      caseSensitive: z.boolean(),
-      allowPartial: z.boolean()
+      pairs: z.array(
+        z.object({
+          left: z.string().min(1, "El elemento izquierdo no puede estar vacío"),
+          right: z.string().min(1, "El elemento derecho no puede estar vacío")
+        })
+      ).min(2, "Debe haber al menos dos pares para la actividad de emparejamiento"),
+      shuffle: z.boolean().default(true)
     }).optional()
   }).refine((data) => {
     // Validar que solo haya una configuración según el tipo de actividad
     const configCount = [
       data.wordSearch,
-      data.quiz,
       data.matching,
-      data.exercise
     ].filter(Boolean).length;
     return configCount === 1;
   }, {
@@ -53,6 +41,7 @@ const ActivitySchema = z.object({
   topicId: z.string().min(1, "El ID del tema es obligatorio"),
   createdById: z.string().min(1, "El ID del creador es obligatorio").optional(),
 });
+
 
 // crear activity
 export async function POST(request: Request) {

@@ -30,20 +30,11 @@ const ProgressUpdateSchema = z.object({
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const validation = ProgressCreateSchema.safeParse(body);
-    
-    if (!validation.success) {
-      return NextResponse.json({
-        status: 400,
-        message: "Error en la comprobacion de ProgressCreateSchema",
-        errors: validation.error.flatten(),
-      }, { status: 400 });
-    }
 
     const existingProgress = await prisma.progress.findFirst({
       where: {
-        studentId: validation.data.studentId,
-        activityId: validation.data.activityId,
+        studentId: body.data.studentId,
+        activityId: body.data.activityId,
       },
     });
 
@@ -56,8 +47,8 @@ export async function POST(request: Request) {
     }
 
     const [student, activity] = await Promise.all([
-      prisma.user.findUnique({ where: { id: validation.data.studentId } }),
-      prisma.activity.findUnique({ where: { id: validation.data.activityId } }),
+      prisma.user.findUnique({ where: { id: body.data.studentId } }),
+      prisma.activity.findUnique({ where: { id: body.data.activityId } }),
     ]);
 
     if (!student) {
@@ -76,8 +67,8 @@ export async function POST(request: Request) {
 
     const progress = await prisma.progress.create({
       data: {
-        ...validation.data,
-        lastAttempt: validation.data.lastAttempt || new Date(),
+        ...body.data,
+        lastAttempt: body.data.lastAttempt || new Date(),
       },
       include: {
         student: {

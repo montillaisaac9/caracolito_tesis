@@ -49,7 +49,7 @@ export default function Sidebar({ links, isOpen, setIsOpen, onSelectLink }: Side
         ${isOpen ? "w-64" : "w-20"}
         transition-all duration-300
         h-screen
-        absolute
+        sticky
       `}
     >
       {/* Toggleable button */}
