@@ -31,18 +31,10 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    const existingProgress = await prisma.progress.findFirst({
-      where: {
-        studentId: body.data.studentId,
-        activityId: body.data.activityId,
-      },
-    });
-
-    if (existingProgress) {
+    if (!body.data?.studentId || !body.data?.activityId || body.data?.score === undefined) {
       return NextResponse.json({
         status: 400,
-        message: "Ya existe un registro de progreso para este estudiante y actividad",
-        data: existingProgress,
+        message: "Datos incompletos. Se requieren studentId, activityId y score",
       }, { status: 400 });
     }
 
@@ -65,40 +57,90 @@ export async function POST(request: Request) {
       }, { status: 404 });
     }
 
-    const progress = await prisma.progress.create({
-      data: {
-        ...body.data,
-        lastAttempt: body.data.lastAttempt || new Date(),
-      },
-      include: {
-        student: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        activity: {
-          select: {
-            id: true,
-            title: true,
-            points: true,
-          },
-        },
+    const existingProgress = await prisma.progress.findFirst({
+      where: {
+        studentId: body.data.studentId,
+        activityId: body.data.activityId,
       },
     });
 
-    return NextResponse.json({
-      status: 201,
-      message: `Progreso creado exitosamente para el estudiante ${student.name}`,
-      data: progress,
-    }, { status: 201 });
+    if (!existingProgress) {
+      const progress = await prisma.progress.create({
+        data: {
+          ...body.data,
+          lastAttempt: body.data.lastAttempt || new Date(),
+        },
+        include: {
+          student: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          activity: {
+            select: {
+              id: true,
+              title: true,
+              points: true,
+            },
+          },
+        },
+      });
+
+      return NextResponse.json({
+        status: 201,
+        message: `Listo ${student.name} tu progreso fue guardado correctamente`,
+        data: progress,
+      }, { status: 201 });
+    }
+
+    if (body.data.score > existingProgress.score) {
+      const updatedProgress = await prisma.progress.update({
+        where: {
+          id: existingProgress.id,
+        },
+        data: {
+          score: body.data.score,
+          lastAttempt: body.data.lastAttempt || new Date(),
+        },
+        include: {
+          student: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          activity: {
+            select: {
+              id: true,
+              title: true,
+              points: true,
+            },
+          },
+        },
+      });
+
+      return NextResponse.json({
+        status: 200,
+        message: `Felicidades ${student.name} acabas de mejorar tu puntuacion sigue mejorando. nueva puntuacion de: ${body.data.score}`,
+        data: updatedProgress,
+      }, { status: 200 });
+    } else {
+      // No actualizar si el score no es mayor
+      return NextResponse.json({
+        status: 202,
+        message: `No has logrado mejorar la puntiacion relajate mantendremos la anterior de: (${existingProgress.score}) para esta actividad.`,
+        data: existingProgress,
+      }, { status: 202 });
+    }
 
   } catch (error) {
-    console.error("Error creando el progreso:", error);
+    console.error("Error procesando el progreso:", error);
     return NextResponse.json({
       status: 500,
-      message: "Error interno del servidor al crear el progreso",
+      message: "Error interno del servidor al procesar el progreso",
     }, { status: 500 });
   }
 }

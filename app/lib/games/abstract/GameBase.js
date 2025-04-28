@@ -3,7 +3,9 @@ export class GameBase {
     this.activity = activity;
     this.gameState = {
       score: 0,
-      completed: false
+      completed: false,
+      gameCompleted:false,
+      timeRemaining:0,
     };
     this.gameData = null;
     this.gameCompleted = false;
