@@ -1,147 +1,234 @@
-// Se elimina la importación de tipos como MatchingConfig y Activity si solo se usan para tipado
-// Si Activity se exporta como un valor en './types', entonces se debería importar desde donde sea su origen real.
-// Asumiendo que GameBase es una clase exportada para runtime:
 import { GameBase } from "./abstract/GameBase";
-import React from 'react'; // Necesario si el método render usa JSX
-
-
-// Se eliminan todas las definiciones de tipos personalizadas
-// type MatchingGameData = { ... };
-// type MatchingState = { ... };
-
-
-// Se elimina 'private' y las anotaciones de tipo de las propiedades de clase.
-// gameData; // Declarada, se asigna en initializeGame
-// gameState; // Declarada, se inicializa en el constructor
-
+import React from 'react';
+import Confetti from 'react-confetti';
 
 export class MatchingGame extends GameBase {
-  // En JS, declaras las propiedades o las inicializas en el constructor/directamente
-  // Aunque TypeScript requiere la declaración si no se inicializan en el constructor,
-  // en JS no es estrictamente necesario declararlas antes si se asignan en el constructor o métodos.
-  // Sin embargo, declararlas aquí ayuda a la legibilidad.
-  gameData; // Corresponde a MatchingGameData en TS
-  gameState; // Corresponde a MatchingState & GameState en TS
-
-  // Se elimina la anotación de tipo del parámetro 'activity: Activity'
   constructor(activity) {
-    // Llama al constructor de GameBase
     super(activity);
 
-    // Inicializa/Completa gameState.
-    // El '...this.gameState' trae las propiedades base { score: 0, completed: false } de GameBase.
     this.gameState = {
-      ...this.gameState, // Mantiene score y completed de GameBase
+      ...this.gameState,
       selectedLeft: null,
       selectedRight: null,
-      matches: {}
+      matches: {},
+      attempts: 0,
+      lastError: null,
+      hint: null,
+      started: false,
+      showConfetti: false
     };
-
-    // Nota: this.gameData NO se inicializa en el constructor como en el ejemplo anterior.
-    // Se asigna en initializeGame(). Esto es válido en JS.
   }
 
-  // --- Implementación de Métodos Abstractos de GameBase ---
-
-  // Se elimina la anotación de tipo ': void'
   initializeGame() {
-    // Se elimina la aserción de tipo 'as MatchingConfig'.
-    const config = this.activity.config; // En JS, accedes directamente
-    // Asume que config es el objeto esperado por generateMatchingGame
+    const config = this.activity.config;
     this.gameData = this.generateMatchingGame(config);
   }
 
-  /**
-   * Maneja las acciones del usuario.
-   */
-  // Se elimina la anotación de tipo del parámetro 'action: { type: string; payload: any }' y del retorno ': void'
   handleAction(action) {
     switch(action.type) {
       case 'SELECT_LEFT':
-        // Se elimina la anotación de tipo del parámetro de handleLeftSelection
         this.handleLeftSelection(action.payload.index);
         break;
       case 'SELECT_RIGHT':
-        // Se elimina la anotación de tipo del parámetro de handleRightSelection
         this.handleRightSelection(action.payload.index);
         break;
-      // ... otros tipos de acción
+      case 'START_GAME':
+        this.updateGameState({ started: true });
+        break;
+      case 'RESET_GAME':
+        this.resetGame();
+        break;
+      case 'GIVE_HINT':
+        this.giveHint();
+        break;
       default:
         console.warn("Acción desconocida:", action);
     }
   }
 
-  /**
-   * Renderiza la interfaz de usuario del juego.
-   */
-  // Se elimina la anotación de tipo ': React.ReactNode'
   render() {
-    // El código JSX se mantiene
-    return (
-      <div className="matching-game">
-        {/* Renderizado del juego de emparejamiento usando this.gameData y this.gameState */}
-        {/* Necesitarás renderizar los items y manejar clicks llamando a this.handleAction */}
-        <h2>Matching Game: {this.activity.title}</h2>
-        <div style={{ display: 'flex', justifyContent: 'space-around' }}>
-            {/* Columna Izquierda */}
-            <div>
-                <h3>Izquierda</h3>
-                {this.gameData?.leftItems?.map((item, index) => (
-                    <div
-                        key={item.id}
-                        onClick={() => this.handleAction({ type: 'SELECT_LEFT', payload: { index } })}
-                        style={{
-                            padding: '10px',
-                            margin: '5px',
-                            border: '1px solid #ccc',
-                            cursor: 'pointer',
-                            // Ejemplo de estilo basado en estado:
-                            backgroundColor: this.gameState?.selectedLeft === index ? '#a5d6a7' :
-                                (this.gameState?.matches && this.gameState.matches[index] !== undefined) ? '#c8e6c9' : '#fff' // Verde claro si emparejado
-                        }}
-                    >
-                        {item.content}
-                    </div>
-                ))}
+    if (!this.gameState.started) {
+      return (
+        <div className="max-w-md mx-auto p-8 bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl">
+          <div className="text-center">
+            <h2 className="text-3xl font-bold text-blue-600 mb-6">{this.activity.title}</h2>
+            
+            <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
+              <h3 className="text-xl font-semibold text-gray-800 mb-4">Instrucciones</h3>
+              <p className="text-gray-600 mb-4">Encuentra todos los pares que coincidan</p>
+              
+              <ul className="text-left space-y-2 text-gray-700">
+                <li className="flex items-start">
+                  <span className="mr-2">👉</span>
+                  <span>Haz clic en un elemento de la columna izquierda</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="mr-2">👉</span>
+                  <span>Haz clic en un elemento de la columna derecha</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="mr-2">👉</span>
+                  <span>Si forman un par correcto, permanecerán resaltados</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="mr-2">👉</span>
+                  <span>Encuentra todos los pares para completar el juego</span>
+                </li>
+              </ul>
             </div>
-            {/* Columna Derecha */}
-             <div>
-                <h3>Derecha</h3>
-                {this.gameData?.rightItems?.map((item, index) => (
-                    <div
-                        key={item.id}
-                        onClick={() => this.handleAction({ type: 'SELECT_RIGHT', payload: { index } })}
-                         style={{
-                            padding: '10px',
-                            margin: '5px',
-                            border: '1px solid #ccc',
-                            cursor: 'pointer',
-                            // Ejemplo de estilo basado en estado:
-                             backgroundColor: this.gameState?.selectedRight === index ? '#a5d6a7' :
-                                (this.gameState?.matches && Object.values(this.gameState.matches).includes(index)) ? '#c8e6c9' : '#fff'
-                        }}
-                    >
-                        {item.content}
-                    </div>
-                ))}
-            </div>
+            
+            <button 
+              className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition duration-300 transform hover:scale-105"
+              onClick={() => this.handleAction({ type: 'START_GAME' })}
+            >
+              Comenzar Juego
+            </button>
+          </div>
         </div>
-         <p>Score: {this.gameState?.score || 0}</p>
-         {this.gameState?.completed && <p>¡Juego Completado!</p>}
+      );
+    }
+
+    const { leftItems, rightItems, pairs } = this.gameData || {};
+    const { matches, selectedLeft, selectedRight, score, completed, hint, showConfetti } = this.gameState;
+
+    return (
+      <div className="max-w-4xl mx-auto p-4">
+        {showConfetti && <Confetti recycle={false} numberOfPieces={500} onConfettiComplete={() => this.updateGameState({ showConfetti: false })} />}
+        
+        <header className="mb-8 pb-4 border-b border-gray-200">
+          <h2 className="text-2xl font-bold text-blue-600 text-center mb-4">{this.activity.title}</h2>
+          
+          <div className="flex justify-around mb-4">
+            <div className="text-center">
+              <span className="block text-sm text-gray-600">Puntuación</span>
+              <span className="text-lg font-bold">{score}</span>
+            </div>
+            
+            <div className="text-center">
+              <span className="block text-sm text-gray-600">Intentos</span>
+              <span className="text-lg font-bold">{this.gameState.attempts}</span>
+            </div>
+            
+            <div className="text-center">
+              <span className="block text-sm text-gray-600">Pares</span>
+              <span className="text-lg font-bold">
+                {Object.keys(matches).length} / {pairs?.length || 0}
+              </span>
+            </div>
+          </div>
+
+          <div className="w-full bg-gray-200 rounded-full h-2.5">
+            <div 
+              className="bg-green-500 h-2.5 rounded-full transition-all duration-500" 
+              style={{ width: `${(Object.keys(matches).length / (pairs?.length || 1)) * 100}%` }}
+            />
+          </div>
+        </header>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {/* Columna Izquierda */}
+          <div className="bg-gray-50 p-4 rounded-lg shadow-sm">
+            <div className="space-y-3">
+              {leftItems?.map((item, index) => {
+                const isSelected = selectedLeft === index;
+                const isMatched = matches[index] !== undefined;
+                const isHinted = hint?.left === index;
+                const isError = this.gameState.lastError && selectedLeft === index;
+
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => !isMatched && this.handleAction({ 
+                      type: 'SELECT_LEFT', 
+                      payload: { index } 
+                    })}
+                    className={`
+                      p-3 rounded-md transition-all duration-200 cursor-pointer
+                      ${isMatched ? 'bg-green-100 border border-green-300 cursor-default' : ''}
+                      ${isSelected ? 'bg-blue-100 border-2 border-blue-400 scale-105' : ''}
+                      ${isHinted ? 'border-3 border-sky-500 border-dashed animate-pulse' : ''}
+                      ${isError ? 'bg-red-100 border-2 border-red-400' : ''}
+                      ${!isMatched && !isSelected ? 'bg-white border border-gray-300 hover:shadow-md hover:scale-[1.02]' : ''}
+                    `}
+                  >
+                    {item.content}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Columna Derecha */}
+          <div className="bg-gray-50 p-4 rounded-lg shadow-sm">
+            <div className="space-y-3">
+              {rightItems?.map((item, index) => {
+                const isSelected = selectedRight === index;
+                const isMatched = Object.values(matches).includes(index);
+                const isHinted = hint?.right === index;
+                const isError = this.gameState.lastError && selectedRight === index;
+
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => !isMatched && this.handleAction({ 
+                      type: 'SELECT_RIGHT', 
+                      payload: { index } 
+                    })}
+                    className={`
+                      p-3 rounded-md transition-all duration-200 cursor-pointer
+                      ${isMatched ? 'bg-green-100 border border-green-300 cursor-default' : ''}
+                      ${isSelected ? 'bg-yellow-100 border-2 border-yellow-400 scale-105' : ''}
+                      ${isHinted ? 'border-3 border-sky-500 border-dashed animate-pulse' : ''}
+                      ${isError ? 'bg-red-100 border-2 border-red-400' : ''}
+                      ${!isMatched && !isSelected ? 'bg-white border border-gray-300 hover:shadow-md hover:scale-[1.02]' : ''}
+                    `}
+                  >
+                    {item.content}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-center gap-4 mb-8">
+          <button 
+            className={`px-4 py-2 rounded-md font-medium transition ${completed ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-100 text-blue-700 hover:bg-blue-200'}`}
+            onClick={() => this.handleAction({ type: 'GIVE_HINT' })}
+            disabled={completed}
+          >
+            Dame una pista
+          </button>
+          
+          <button 
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md font-medium hover:bg-gray-200 transition"
+            onClick={() => this.handleAction({ type: 'RESET_GAME' })}
+          >
+            Reiniciar Juego
+          </button>
+        </div>
+
+        {completed && (
+          <div className="text-center p-6 bg-blue-50 rounded-lg border border-blue-200">
+            <h3 className="text-2xl font-bold text-blue-600 mb-2">¡Juego Completado! 🎉</h3>
+            <p className="text-lg mb-1">Puntuación final: <span className="font-bold">{score}</span> puntos</p>
+            <p className="text-lg mb-4">Intentos totales: <span className="font-bold">{this.gameState.attempts}</span></p>
+            <button 
+              className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition duration-300 transform hover:scale-105"
+              onClick={() => this.handleAction({ type: 'RESET_GAME' })}
+            >
+              Jugar de nuevo
+            </button>
+          </div>
+        )}
       </div>
     );
   }
 
-
-  // --- Métodos Específicos de MatchingGame ---
-
-  // Se elimina 'private', y las anotaciones de tipo del parámetro 'config: MatchingConfig' y del retorno ': MatchingGameData'
   generateMatchingGame(config) {
-    // Implementación de la generación de pares se mantiene (es válido JS)
     const { matching } = config;
     let { pairs, shuffle } = matching;
 
-    // Copia el array antes de ordenar si shuffle es true para no modificar el original en config
     if (shuffle) {
       pairs = [...pairs].sort(() => Math.random() - 0.5);
     }
@@ -149,117 +236,129 @@ export class MatchingGame extends GameBase {
     const leftItems = pairs.map((pair, index) => ({
       id: `left-${index}`,
       content: pair.left,
-      originalIndex: index // originalIndex del par en el array de configuración
+      originalIndex: index
     }));
 
-    // Mezcla los rightItems independientemente
     const rightItems = pairs.map((pair, index) => ({
       id: `right-${index}`,
       content: pair.right,
-      originalIndex: index // originalIndex del par en el array de configuración
-    })).sort(() => Math.random() - 0.5); // Mezcla
+      originalIndex: index
+    })).sort(() => Math.random() - 0.5);
 
-    // El array original 'pairs' (mezclado o no) es útil para verificar matches
     return { leftItems, rightItems, pairs };
   }
 
-  // Se elimina 'private' y la anotación de tipo del parámetro 'index: number'. Se añade cuerpo.
   handleLeftSelection(index) {
-     console.log(`Seleccionado ítem izquierdo con índice: ${index}`);
-     this.updateGameState({ selectedLeft: index, selectedRight: null }); // Limpiar selección derecha al seleccionar izquierda
-     this.checkForMatch(); // Comprobar si hay un match si ya había un ítem derecho seleccionado
+    if (this.gameState.matches[index] !== undefined) return;
+    
+    this.updateGameState({ 
+      selectedLeft: index,
+      selectedRight: null,
+      lastError: null
+    });
+    
+    if (this.gameState.selectedRight !== null) {
+      this.checkForMatch();
+    }
   }
 
-  // Se elimina 'private' y la anotación de tipo del parámetro 'index: number'. Se añade cuerpo.
   handleRightSelection(index) {
-    console.log(`Seleccionado ítem derecho con índice: ${index}`);
-    // Solo actualiza la selección derecha
-    this.updateGameState({ selectedRight: index });
-    this.checkForMatch(); // Comprobar si hay un match inmediatamente
+    if (Object.values(this.gameState.matches).includes(index)) return;
+    
+    this.updateGameState({ 
+      selectedRight: index,
+      lastError: null 
+    });
+    
+    if (this.gameState.selectedLeft !== null) {
+      this.checkForMatch();
+    }
   }
 
-   /**
-    * Comprueba si las selecciones actuales izquierda y derecha forman un par válido.
-    * Implementación de ejemplo - NECESITA LÓGICA ROBUSTA.
-    */
-   // Nuevo método en JS (no estaba completamente definido en TS snippet)
-   checkForMatch() {
-       const { selectedLeft, selectedRight, matches } = this.gameState;
-       const { leftItems, rightItems, pairs } = this.gameData;
+  checkForMatch() {
+    const { selectedLeft, selectedRight } = this.gameState;
+    const { leftItems, rightItems } = this.gameData;
 
-       // Asegurarse de que ambos ítems estén seleccionados
-       if (selectedLeft !== null && selectedRight !== null) {
-           const leftItem = leftItems[selectedLeft];
-           const rightItem = rightItems[selectedRight];
+    if (selectedLeft === null || selectedRight === null) return;
 
-           // Lógica para verificar si coinciden.
-           // Esto depende de cómo generaste el juego y qué defines como "match".
-           // Un enfoque común es usar el originalIndex para verificar el par.
-           // Verificar si el par original (basado en originalIndex) de leftItem
-           // coincide con el par original de rightItem.
+    this.updateGameState({ attempts: this.gameState.attempts + 1 });
 
-           const isMatch = leftItem.originalIndex === rightItem.originalIndex;
+    const leftItem = leftItems[selectedLeft];
+    const rightItem = rightItems[selectedRight];
+    const isMatch = leftItem.originalIndex === rightItem.originalIndex;
 
-           if (isMatch) {
-               console.log(`¡Match encontrado entre ${leftItem.content} y ${rightItem.content}!`);
-               const newMatches = { ...matches, [selectedLeft]: selectedRight }; // Guarda el match [indiceIzquierda]: indiceDerecha
+    if (isMatch) {
+      const newMatches = { 
+        ...this.gameState.matches, 
+        [selectedLeft]: selectedRight 
+      };
 
-               // Actualizar estado: añadir match, limpiar selecciones, calcular score
-               this.updateGameState({
-                   matches: newMatches,
-                   selectedLeft: null,
-                   selectedRight: null,
-               });
+      this.updateGameState({
+        matches: newMatches,
+        selectedLeft: null,
+        selectedRight: null,
+        hint: null
+      });
 
-               // Calcular y actualizar score
-               const newScore = this.calculateScore();
-               this.updateGameState({ score: newScore });
+      const newScore = this.calculateScore();
+      this.updateGameState({ score: newScore });
 
-               // Comprobar si el juego ha terminado (todos los pares encontrados)
-               if (Object.keys(newMatches).length === pairs.length) {
-                   console.log("¡Todos los pares encontrados!");
-                   this.completeGame(); // Llama al método de GameBase para completar el juego
-               } else {
-                    // Guardar progreso después de encontrar un match (opcional)
-                    this.saveProgress();
-               }
+      if (Object.keys(newMatches).length === this.gameData.pairs.length) {
+        this.updateGameState({ showConfetti: true });
+        this.completeGame();
+      } else {
+        this.saveProgress();
+      }
+    } else {
+      this.updateGameState({ lastError: Date.now() });
+      setTimeout(() => {
+        this.updateGameState({
+          selectedLeft: null,
+          selectedRight: null
+        });
+      }, 1000);
+    }
+  }
 
-           } else {
-               console.log("No hay match. Limpiando selecciones.");
-               // Limpiar selecciones si no hay match después de un breve retraso
-               // para que el usuario pueda ver su error
-               setTimeout(() => {
-                    this.updateGameState({
-                        selectedLeft: null,
-                        selectedRight: null,
-                    });
-               }, 500); // Espera 500ms antes de limpiar
-           }
-       }
-   }
-
-
-  /**
-   * Calcula la puntuación basada en los pares correctos encontrados.
-   * Sobrescribe el método base.
-   */
-  // Se elimina la anotación de tipo ': number'
   calculateScore() {
-    // Puntaje basado en pares correctos
-    // Object.keys(this.gameState.matches).length da el número de pares encontrados
     const matches = Object.keys(this.gameState.matches).length;
-    const totalPairs = this.gameData.pairs.length; // Total de pares posibles
-     if (totalPairs === 0) {
-       return 0; // Evitar división por cero
-     }
-    const score = Math.floor((matches / totalPairs) * this.activity.points);
-    return score;
+    const totalPairs = this.gameData.pairs.length;
+    if (totalPairs === 0) return 0;
+    return Math.floor((matches / totalPairs) * this.activity.points);
   }
 
-  // Hereda y puede usar:
-  // this.activity (datos de la actividad)
-  // this.getGameState() (obtiene el estado actual)
-  // this.updateGameState(updates) (actualiza parcialmente el estado)
-  // this.completeGame() (marca el juego como completado y guarda)
-  // this.saveProgress() (guarda el progreso)
+  resetGame() {
+    this.initializeGame();
+    this.updateGameState({
+      selectedLeft: null,
+      selectedRight: null,
+      matches: {},
+      attempts: 0,
+      score: 0,
+      completed: false,
+      lastError: null,
+      hint: null,
+      showConfetti: false
+    });
+  }
+
+  giveHint() {
+    const { leftItems, pairs } = this.gameData;
+    const { matches } = this.gameState;
+
+    const unmatchedIndex = leftItems.findIndex((_, idx) => !matches[idx]);
+    if (unmatchedIndex === -1) return;
+
+    const rightIndex = this.gameData.rightItems.findIndex(
+      item => item.originalIndex === leftItems[unmatchedIndex].originalIndex
+    );
+
+    this.updateGameState({ 
+      hint: { left: unmatchedIndex, right: rightIndex },
+      selectedLeft: null,
+      selectedRight: null
+    });
+
+    setTimeout(() => this.updateGameState({ hint: null }), 3000);
+  }
 }

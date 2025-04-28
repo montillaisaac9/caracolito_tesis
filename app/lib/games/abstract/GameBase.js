@@ -25,7 +25,7 @@ export class GameBase {
   }
 
   getGameData() {
-    return this.gameData;
+    return "muy bien hecho";
   }
 
   getGameState() {
