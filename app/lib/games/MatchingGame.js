@@ -21,6 +21,9 @@ export class MatchingGame extends GameBase {
 
   initializeGame() {
     const config = this.activity.config;
+    if (!config?.matching || !Array.isArray(config.matching.pairs) || config.matching.pairs.length === 0) {
+      throw new Error("La configuración del juego de emparejamiento es inválida o está ausente.");
+    }
     this.gameData = this.generateMatchingGame(config);
   }
 
@@ -285,24 +288,27 @@ export class MatchingGame extends GameBase {
 
     const leftItem = leftItems[selectedLeft];
     const rightItem = rightItems[selectedRight];
+
+    // Validamos si los índices originales coinciden
     const isMatch = leftItem.originalIndex === rightItem.originalIndex;
 
     if (isMatch) {
-      const newMatches = { 
-        ...this.gameState.matches, 
-        [selectedLeft]: selectedRight 
+      const newMatches = {
+        ...this.gameState.matches,
+        [selectedLeft]: selectedRight,
       };
 
       this.updateGameState({
         matches: newMatches,
         selectedLeft: null,
         selectedRight: null,
-        hint: null
+        hint: null,
       });
 
       const newScore = this.calculateScore();
       this.updateGameState({ score: newScore });
 
+      // Verificamos si todos los pares han sido encontrados
       if (Object.keys(newMatches).length === this.gameData.pairs.length) {
         this.updateGameState({ showConfetti: true });
         this.completeGame();
@@ -310,11 +316,11 @@ export class MatchingGame extends GameBase {
         this.saveProgress();
       }
     } else {
-      this.updateGameState({ lastError: Date.now() });
+      // Si no coinciden, limpiamos la selección después de un breve retraso
       setTimeout(() => {
         this.updateGameState({
           selectedLeft: null,
-          selectedRight: null
+          selectedRight: null,
         });
       }, 1000);
     }

@@ -1,11 +1,14 @@
 export class GameBase {
   constructor(activity) {
+    if (!activity || !activity.config) {
+      throw new Error("La configuración de la actividad es inválida o está ausente.");
+    }
     this.activity = activity;
     this.gameState = {
       score: 0,
       completed: false,
-      gameCompleted:false,
-      timeRemaining:0,
+      gameCompleted: false,
+      timeRemaining: 0,
     };
     this.gameData = null;
     this.gameCompleted = false;

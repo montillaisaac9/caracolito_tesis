@@ -8,7 +8,6 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import Spinner from "@/app/components/ui/common/progresBar";
 import { GameFactory } from "@/app/lib/games/GameFactory";
 import { GameBase } from "@/app/lib/games/abstract/GameBase";
-import { message } from "@/app/api/helpers/responsesMsg";
 import Confetti from 'react-confetti';
 import useWindowSize from 'react-use/lib/useWindowSize';
 
@@ -41,6 +40,7 @@ interface ProgressData {
 interface GameState {
   score: number;
   completed: boolean;
+  [key: string]: any;
 }
 
 export default function Activities() {
@@ -52,7 +52,8 @@ export default function Activities() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activity, setActivity] = useState<Activity | null>(null);
-  const [finalyResponce, setFinalyResponce] = useState({ message: "", data: {} });
+  const [finalyResponce, setFinalyResponce] = useState<{ message?: string, data?: any }>({});
+
   const [confettiPieces, setConfettiPieces] = useState(0);
   const [confettiOpacity, setConfettiOpacity] = useState(1);
 
@@ -69,17 +70,10 @@ export default function Activities() {
   const latestGameInstance = useRef(gameInstance);
   const latestGameCompleted = useRef(gameCompleted);
 
-  useEffect(() => {
-    latestTimeRemaining.current = timeRemaining;
-  }, [timeRemaining]);
+  useEffect(() => { latestTimeRemaining.current = timeRemaining; }, [timeRemaining]);
+  useEffect(() => { latestGameInstance.current = gameInstance; }, [gameInstance]);
+  useEffect(() => { latestGameCompleted.current = gameCompleted; }, [gameCompleted]);
 
-  useEffect(() => {
-    latestGameInstance.current = gameInstance;
-  }, [gameInstance]);
-
-  useEffect(() => {
-    latestGameCompleted.current = gameCompleted;
-  }, [gameCompleted]);
 
   const fetchActivity = useCallback(async () => {
     if (!activityId) return;
@@ -89,11 +83,14 @@ export default function Activities() {
       setError(null);
 
       const response = await api.get<{ data: Activity }>(`/activities?id=${activityId}`);
+
       if (response.status === 200 && response.data.data) {
         setActivity(response.data.data);
-        setTimeRemaining(response.data.data.timeLimit ?? null);
+        if (!gameStarted) {
+           setTimeRemaining(response.data.data.timeLimit ?? null);
+        }
       } else {
-        setError("No se encontró la actividad solicitada.");
+        setError(response.data?.message || "No se encontró la actividad solicitada.");
         setActivity(null);
         setTimeRemaining(null);
       }
@@ -105,7 +102,8 @@ export default function Activities() {
     } finally {
       setLoading(false);
     }
-  }, [activityId]);
+  }, [activityId, gameStarted]);
+
 
   useEffect(() => {
     fetchActivity();
@@ -117,7 +115,7 @@ export default function Activities() {
     currentTimeRemaining: number | null
   ): Promise<void> => {
     if (!activity?.id || !user?.id || !instance) {
-      console.warn("Datos faltantes para guardar progreso:", {
+      console.warn("Datos faltantes para guardar progreso. Abortando guardado.", {
         activityId: activity?.id,
         userId: user?.id,
         instanceExists: !!instance
@@ -126,52 +124,82 @@ export default function Activities() {
     }
 
     try {
+      const timeSpent = (activity.timeLimit !== null && activity.timeLimit !== undefined && currentTimeRemaining !== null)
+          ? Math.max(0, (activity.timeLimit - currentTimeRemaining))
+          : undefined;
+
       const progressData: ProgressData = {
         studentId: user.id,
         activityId: activity.id,
         score: gameState.score,
         completed: gameState.completed,
-        timeSpent: activity.timeLimit !== null && activity.timeLimit !== undefined && currentTimeRemaining !== null
-          ? (activity.timeLimit - currentTimeRemaining)
-          : undefined,
+        timeSpent: timeSpent,
         attempts: 1,
         lastAttempt: new Date(),
-        feedback: "muy bien hecho"
+        feedback: gameState.completed && gameState.score !== undefined ? renderScoreFeedback(gameState.score) : "Progreso guardado",
       };
 
       const response = await api.post(`/progress`, { data: progressData });
-      setFinalyResponce(response.data);
+      setFinalyResponce(response.data || { message: "Progreso guardado con éxito" });
 
     } catch (error) {
       console.error("Error saving progress:", error);
+      setFinalyResponce({ message: "Error al guardar el progreso." });
     }
   }, [activity, user?.id]);
 
   const startConfetti = useCallback(() => {
-    setConfettiPieces(700);
-    setConfettiOpacity(0.8);
+    setConfettiPieces(1200);
+    setConfettiOpacity(1);
 
     if (confettiRef.current) {
       clearInterval(confettiRef.current);
+      confettiRef.current = null;
     }
 
-    confettiRef.current = setInterval(() => {
+    const fadeInterval = setInterval(() => {
       setConfettiOpacity(prev => {
-        const newOpacity = prev - 0.05;
+        const newOpacity = prev - 0.03;
+
         if (newOpacity <= 0) {
-          clearInterval(confettiRef.current as NodeJS.Timeout);
+          clearInterval(fadeInterval);
+          confettiRef.current = null;
           setConfettiPieces(0);
           return 0;
         }
         return newOpacity;
       });
-    }, 8000);
+    }, 800);
+
+    confettiRef.current = fadeInterval;
+
+
+    const clearConfettiTimeout = setTimeout(() => {
+         setConfettiPieces(0);
+         setConfettiOpacity(1);
+         if (confettiRef.current) {
+             clearInterval(confettiRef.current);
+             confettiRef.current = null;
+         }
+    }, 20000);
+
+
+     return () => {
+        clearTimeout(clearConfettiTimeout);
+        if (confettiRef.current) {
+             clearInterval(confettiRef.current);
+             confettiRef.current = null;
+         }
+     };
+
   }, []);
 
-  const handleGameCompletion = useCallback(async () => {
-    if (latestGameCompleted.current) return;
 
-    console.log("Iniciando completado del juego (desde callback)");
+  const handleGameCompletion = useCallback(async () => {
+    if (latestGameCompleted.current) {
+         return;
+    }
+
     setGameCompleted(true);
     startConfetti();
 
@@ -184,22 +212,26 @@ export default function Activities() {
     const currentTimeRemaining = latestTimeRemaining.current;
 
     if (!instance) {
-      console.warn("No game instance available to complete game.");
+      console.warn("No hay instancia del juego disponible para completar la lógica de guardado.");
       return;
     }
 
     try {
       const gameState = instance.getGameState();
       await saveProgress(instance, gameState, currentTimeRemaining);
-      instance.completeGame?.();
+
     } catch (error) {
-      console.error("Error al completar el juego:", error);
+      console.error("Error durante el proceso de completado/guardado del juego:", error);
     }
   }, [saveProgress, startConfetti]);
 
-  const startGame = useCallback(async () => {
-    if (!activity || gameStarted) return;
 
+  const startGame = useCallback(async () => {
+    if (!activity || gameStarted) {
+      if (!activity) console.warn("startGame llamado sin datos de actividad.");
+      if (gameStarted) console.warn("startGame llamado, pero el juego ya ha empezado.");
+      return;
+    }
 
     try {
       const game = GameFactory.createGame(activity);
@@ -208,127 +240,187 @@ export default function Activities() {
         await handleGameCompletion();
       };
 
-      game.initializeGame();
+      await game.initializeGame();
+
       setGameInstance(game);
       setGameStarted(true);
       setGameCompleted(false);
+      setFinalyResponce({});
       setConfettiPieces(0);
       setConfettiOpacity(1);
 
-      setTimeRemaining(activity.timeLimit ?? null);
+      const initialTime = activity.timeLimit ?? null;
+      setTimeRemaining(initialTime);
+      latestTimeRemaining.current = initialTime;
 
+      console.log(`Juego de tipo ${activity.type} iniciado correctamente.`);
     } catch (err) {
       console.error("Error al iniciar el juego:", err);
-      setError(`Tipo de actividad no soportado: ${activity?.type || 'Desconocido'}`);
+      const errorMessage = err instanceof Error ? err.message : "Error desconocido al iniciar el juego.";
+      setError(`Error al iniciar el juego: ${errorMessage}`);
     }
   }, [activity, gameStarted, handleGameCompletion]);
 
+
   useEffect(() => {
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (confettiRef.current) clearInterval(confettiRef.current);
+      console.log("Activities: Limpiando temporizadores y confetti al desmontar.");
+      if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+      }
+      if (confettiRef.current) {
+          clearInterval(confettiRef.current);
+          confettiRef.current = null;
+      }
     };
   }, []);
 
   useEffect(() => {
-    if (!gameStarted || latestTimeRemaining.current === null || latestGameCompleted.current) {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-      return;
+    const timerShouldRun = gameStarted && latestTimeRemaining.current !== null && latestGameCompleted.current === false;
+
+    if (timerShouldRun && timerRef.current === null) {
+         console.log("Iniciando temporizador de cuenta regresiva...");
+         timerRef.current = setInterval(() => {
+           setTimeRemaining(prev => {
+             const newTime = (prev === null || prev <= 1) ? 0 : prev - 1;
+             latestTimeRemaining.current = newTime;
+
+             if (newTime === 0 && !latestGameCompleted.current) {
+                console.log("Tiempo agotado. El temporizador dispara la finalización.");
+             }
+             return newTime;
+           });
+         }, 1000);
+
+    }
+    else if (!timerShouldRun && timerRef.current !== null) {
+        console.log("Condiciones del temporizador no cumplidas. Limpiando temporizador activo.");
+         clearInterval(timerRef.current);
+         timerRef.current = null;
     }
 
-    timerRef.current = setInterval(() => {
-      setTimeRemaining(prev => {
-        const newTime = (prev === null || prev <= 1) ? 0 : prev - 1;
-        latestTimeRemaining.current = newTime;
-
-        if (newTime === 0) {
-          handleGameCompletion();
-        }
-        return newTime;
-      });
-    }, 1000);
 
     return () => {
       if (timerRef.current) {
+        console.log("Efecto de temporizador: Limpiando intervalo existente.");
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
     };
-  }, [gameStarted, gameCompleted, handleGameCompletion]);
+  }, [gameStarted, latestGameCompleted.current, handleGameCompletion]);
+
+  useEffect(() => {
+      if (gameStarted && timeRemaining !== null && timeRemaining <= 0 && !gameCompleted) {
+           console.log("timeRemaining <= 0 detectado en useEffect. Llamando a handleGameCompletion.");
+           handleGameCompletion();
+      }
+  }, [gameStarted, timeRemaining, gameCompleted, handleGameCompletion]);
+
 
   const renderActivityGame = useCallback(() => {
-    if (!gameInstance) return null;
+    if (!gameInstance) {
+        return null;
+    }
     return (
-      <div className="game-container">
+      <div className="game-container w-full flex justify-center">
         {gameInstance.render()}
       </div>
     );
   }, [gameInstance]);
 
+
   const renderActivityDetails = useCallback(() => {
     if (!activity) return null;
 
     return (
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-4">{activity.title}</h1>
+      <div className="mb-8 p-4 bg-white rounded-lg shadow-md">
+        <h1 className="text-3xl font-bold mb-4 text-gray-800">{activity.title}</h1>
 
-        <div className="p-4 bg-gray-100 rounded-lg mb-6">
-          <div className="grid grid-cols-2 gap-4">
+        <div className="p-4 bg-gray-100 rounded-lg">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
             <div>
               <p><strong>Tipo:</strong> {activity.type}</p>
               <p><strong>Dificultad:</strong> {activity.difficulty}</p>
-              <p><strong>Puntos:</strong> {activity.points}</p>
+              <p><strong>Puntos máximos:</strong> {activity.points}</p>
               {activity.timeLimit !== null && activity.timeLimit !== undefined && (
                 <p><strong>Tiempo límite:</strong> {activity.timeLimit} segundos</p>
               )}
             </div>
 
             <div>
-              <p><strong>Activo:</strong> {activity.isActive ? 'Sí' : 'No'}</p>
+              <p><strong>Estado:</strong> {activity.isActive ? 'Activa' : 'Inactiva'}</p>
               <p><strong>Creado:</strong> {new Date(activity.createdAt).toLocaleDateString()}</p>
-              <p><strong>Actualizado:</strong> {new Date(activity.updatedAt).toLocaleDateString()}</p>
+              <p><strong>Última actualización:</strong> {new Date(activity.updatedAt).toLocaleDateString()}</p>
             </div>
           </div>
         </div>
+         {gameCompleted && finalyResponce?.message && (
+            <div className="mt-4 p-4 bg-blue-100 text-green-800 rounded-lg font-semibold">
+                 {finalyResponce.message}
+            </div>
+         )}
       </div>
     );
-  }, [activity]);
+  }, [activity, gameCompleted, finalyResponce]);
+
 
   const renderScoreFeedback = useCallback((score: number) => {
-    if (score >= 8) return "¡Muy bien, tienes talento!";
-    if (score >= 5) return "Vas bien.";
-    return "Necesitas practicar más.";
-  }, []);
+     const totalPoints = activity?.points ?? 10;
+     const percentage = totalPoints > 0 ? (score / totalPoints) * 100 : 0;
+
+    if (percentage >= 95) return "¡Felicidades, excelente!";
+    if (percentage >= 80) return "¡Muy bien hecho!";
+    if (percentage >= 50) return "Buen trabajo, sigue practicando para mejorar.";
+    if (percentage > 0) return "Necesitas practicar más para dominarlo.";
+    return "Inténtalo de nuevo para conseguir tu primera puntuación.";
+  }, [activity?.points]);
+
 
   if (loading && !activity) {
     return (
-      <div className="flex justify-center p-8">
-        <Spinner isLoading={true} />
+      <div className="flex justify-center items-center min-h-screen p-8">
+        <Spinner isLoading={true} message="Cargando actividad..." />
       </div>
     );
   }
 
   if (error && !activity) {
     return (
-      <div className="p-8 bg-red-100 text-red-700 rounded-lg">
-        {error}
+      <div className="container mx-auto p-8">
+         <div className="p-8 bg-red-100 text-red-700 rounded-lg shadow-md">
+            <p className="text-xl font-semibold mb-4">Error al cargar la actividad</p>
+            <p>{error}</p>
+             <button
+                onClick={() => router.push('/activities')}
+                className="mt-4 px-4 py-2 bg-red-700 text-white rounded hover:bg-red-800 transition-colors"
+            >
+                Volver a Actividades
+            </button>
+         </div>
       </div>
     );
   }
 
   if (!loading && !error && !activity) {
     return (
-      <div className="p-8 bg-yellow-100 text-yellow-800 rounded-lg">
-        No se pudo cargar la actividad. Verifica la URL.
+      <div className="container mx-auto p-8">
+        <div className="p-8 bg-yellow-100 text-yellow-800 rounded-lg shadow-md">
+           <p className="text-xl font-semibold mb-4">Actividad no encontrada</p>
+           <p>Parece que la actividad que buscas no existe o la URL es incorrecta.</p>
+            <button
+                onClick={() => router.push('/activities')}
+                className="mt-4 px-4 py-2 bg-yellow-700 text-white rounded hover:bg-yellow-800 transition-colors"
+            >
+                Volver a Actividades
+            </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-4 relative">
+    <div className="container mx-auto p-4 lg:p-8 relative min-h-screen">
       {confettiPieces > 0 && (
         <div className="fixed inset-0 z-50 pointer-events-none">
           <Confetti
@@ -336,10 +428,16 @@ export default function Activities() {
             height={height}
             numberOfPieces={confettiPieces}
             recycle={false}
-            gravity={0.2}
-            wind={0.01}
+            gravity={0.3}
+            wind={0.02}
             opacity={confettiOpacity}
-            colors={['#FFC700', '#FF0000', '#2E3191', '#41BBC7']}
+            colors={['#FFC700', '#FF0000', '#2E3191', '#41BBC7', '#34A853', '#FABA00', '#FBBC05']}
+            confettiSource={{
+                x: 0, // Iniciar desde el borde izquierdo
+                y: -50,
+                w: width, // Cubrir todo el ancho de la ventana
+                h: 10
+            }}
             style={{
               position: 'fixed',
               top: 0,
@@ -353,73 +451,75 @@ export default function Activities() {
 
       {renderActivityDetails()}
 
-      {user?.role === 'STUDENT' && activity?.isActive && !gameStarted && (
-        <div className="mb-4">
-          <button
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-colors"
-            onClick={startGame}
-          >
-            Comenzar Actividad
-          </button>
-        </div>
-      )}
+      <div className="bg-white rounded-lg shadow-md p-4 md:p-6">
 
-      {user?.role === 'STUDENT' && gameStarted && (
-        <div className="mb-8">
-          {!gameCompleted && timeRemaining !== null && (
-            <div className="mb-4">
-              <div className="p-3 bg-blue-100 text-blue-800 rounded flex items-center justify-center text-lg font-semibold">
-                Tiempo restante: {Math.floor(timeRemaining / 60)}:{String(timeRemaining % 60).padStart(2, '0')}
-              </div>
-              {activity?.timeLimit !== null && activity?.timeLimit !== undefined && (
-                <div className="w-full mt-2 bg-gray-200 rounded-full h-2">
-                  <div
-                    className="h-2 bg-blue-500 rounded-full transition-all duration-1000 ease-linear"
-                    style={{ width: `${(timeRemaining / activity.timeLimit) * 100}%` }}
-                  ></div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {gameCompleted ? (
-            <div className="p-6 bg-green-100 text-green-800 rounded-lg mb-4">
-              <h2 className="text-2xl font-bold mb-2">¡Actividad Completada!</h2>
-              <p className="text-xl mb-4">
-                <strong>Puntuación:</strong> {gameInstance?.getGameState().score || 0} puntos
-                {gameInstance?.getGameState().score !== undefined && (
-                  <span className="ml-2">{renderScoreFeedback(gameInstance.getGameState().score)}</span>
-                )}
-              </p>
-              {finalyResponce?.message && (
-                <div className="mb-4 p-4 rounded-lg">
-                  <p className="font-semibold">{finalyResponce.message}</p>
-                </div>
-              )}
+          {user?.role === 'STUDENT' && activity?.isActive && !gameStarted && (
+            <div className="mb-4 text-center">
               <button
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-                onClick={() => router.push('/activities')}
+                className="px-8 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold text-xl transition-colors shadow-lg"
+                onClick={startGame}
+                 disabled={loading}
               >
-                Volver a Actividades
+                {loading ? 'Cargando...' : 'Comenzar Actividad'}
               </button>
             </div>
-          ) : (
-            renderActivityGame()
           )}
-        </div>
-      )}
 
-      {user?.role !== 'STUDENT' && (
-        <div className="p-4 bg-yellow-100 text-yellow-800 rounded-lg">
-          Esta sección es para estudiantes.
-        </div>
-      )}
+          {user?.role === 'STUDENT' && gameStarted && (
+            <div className="mb-4 flex flex-col items-center">
+              {!gameCompleted && timeRemaining !== null && (
+                <div className="w-full max-w-md mb-6">
+                  <div className="p-3 bg-blue-100 text-blue-800 rounded-t-lg flex items-center justify-between text-lg font-semibold border border-blue-200">
+                     <span>Tiempo restante:</span>
+                     <span className="font-mono">{Math.floor(timeRemaining / 60)}:{String(timeRemaining % 60).padStart(2, '0')}</span>
+                  </div>
+                  {activity?.timeLimit !== null && activity?.timeLimit !== undefined && activity.timeLimit > 0 && (
+                    <div className="w-full bg-gray-200 rounded-b-lg h-3 border border-gray-300 overflow-hidden">
+                      <div
+                        className="h-full bg-blue-500 transition-all duration-1000 ease-linear"
+                        style={{ width: `${Math.max(0, (timeRemaining / activity.timeLimit) * 100)}%` }}
+                      ></div>
+                    </div>
+                  )}
+                </div>
+              )}
 
-      {user?.role === 'STUDENT' && activity && !activity.isActive && (
-        <div className="p-4 bg-yellow-100 text-yellow-800 rounded-lg">
-          Esta actividad no está activa actualmente.
-        </div>
-      )}
+              {gameCompleted ? (
+                <div className="p-6 bg-green-100 text-green-800 rounded-lg w-full max-w-lg text-center shadow-xl border border-green-200">
+                  <h2 className="text-2xl font-bold mb-3">¡Actividad Completada!</h2>
+                  <p className="text-xl mb-4">
+                    <strong>Puntuación final:</strong> {gameInstance?.getGameState().score || 0} puntos
+                  </p>
+                   {gameInstance?.getGameState().score !== undefined && (
+                     <p className="text-lg font-semibold mb-4">{renderScoreFeedback(gameInstance.getGameState().score)}</p>
+                   )}
+
+                  <button
+                    className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold transition-colors shadow"
+                    onClick={() => router.push('/activities')}
+                  >
+                    Comenzar de nuevo
+                  </button>
+                </div>
+              ) : (
+                renderActivityGame()
+              )}
+            </div>
+          )}
+
+          {user?.role !== 'STUDENT' && (
+            <div className="p-4 bg-yellow-100 text-yellow-800 rounded-lg text-center font-semibold">
+              Esta sección es para estudiantes.
+            </div>
+          )}
+
+          {user?.role === 'STUDENT' && activity && !activity.isActive && !gameStarted && (
+            <div className="p-4 bg-yellow-100 text-yellow-800 rounded-lg text-center font-semibold">
+              Esta actividad no está activa actualmente.
+            </div>
+          )}
+
+      </div>
     </div>
   );
 }
