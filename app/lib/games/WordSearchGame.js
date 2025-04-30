@@ -329,7 +329,7 @@ export class WordSearchGame extends GameBase {
     return (
       <div className="max-w-4xl mx-auto p-4">
         <header className="mb-8 pb-4 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-blue-600 text-center mb-4">{this.activity.title}</h2>
+          <h2 className="text-2xl font-bold text-sky-600 text-center mb-4">{this.activity.title}</h2>
           <div className="flex justify-around mb-4">
             <div className="text-center">
               <span className="block text-sm text-gray-600">Puntuación</span>
@@ -346,7 +346,7 @@ export class WordSearchGame extends GameBase {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="bg-white p-6 rounded-lg shadow-sm border border-blue-100">
-            <h3 className="text-xl font-semibold text-blue-800 mb-4">Palabras a encontrar</h3>
+            <h3 className="text-xl font-semibold text-sky-800 mb-4">Palabras a encontrar</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {words.map(word => {
                 const isFound = foundWords.some(found => found.word === word.toUpperCase());
@@ -359,7 +359,7 @@ export class WordSearchGame extends GameBase {
                         ? 'bg-green-100 text-green-800 line-through'
                         : isHinted
                         ? 'bg-yellow-100 text-yellow-800 font-bold animate-pulse'
-                        : 'bg-blue-50 text-blue-800'
+                        : 'bg-blue-50 text-sky-800'
                     }`}
                   >
                     <span className="font-medium">{word}</span>
@@ -396,7 +396,7 @@ export class WordSearchGame extends GameBase {
                   return (
                     <GridCell
                       key={cellId}
-                      letter={cell.toUpperCase()}
+                      letter={cell}
                       isSelected={isSelected}
                       isDisabled={isFound}
                       isHinted={isHinted}
