@@ -185,7 +185,7 @@ export class WordSearchGame extends GameBase {
       const newScore = this.gameState.score + wordScore;
 
       const newFoundWords = [...this.gameState.foundWords, { word: foundWord.word, cells: selectedCells }];
-      
+
       this.updateGameState({
         foundWords: newFoundWords,
         selectedCells: [],
@@ -274,8 +274,8 @@ export class WordSearchGame extends GameBase {
   }
 
   allWordsFound() {
-    return this.gameData.words.every(word => 
-      this.gameState.foundWords.some(found => 
+    return this.gameData.words.every(word =>
+      this.gameState.foundWords.some(found =>
         found.word === word.toUpperCase()
       )
     );
@@ -327,7 +327,7 @@ export class WordSearchGame extends GameBase {
     const gridSize = grid.length;
 
     return (
-      <div className="max-w-4xl mx-auto p-4">
+      <div className="w-3/4 mx-auto p-4">
         <header className="mb-8 pb-4 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-sky-600 text-center mb-4">{this.activity.title}</h2>
           <div className="flex justify-around mb-4">
@@ -344,23 +344,23 @@ export class WordSearchGame extends GameBase {
           </div>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-blue-100">
-            <h3 className="text-xl font-semibold text-sky-800 mb-4">Palabras a encontrar</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className="flex flex-col gap-6 justify-center items-center">
+          {/* Columna izquierda - Palabras (arriba en móvil, izquierda en desktop) */}
+          <div className="w-fit bg-white p-4 rounded-lg shadow-sm border border-blue-100">
+            <h3 className="text-xl font-semibold text-sky-800 mb-3 sticky top-0 bg-white py-2">Palabras a encontrar</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-2 overflow-y-auto max-h-[200px] lg:max-h-[calc(100%-60px)]">
               {words.map(word => {
                 const isFound = foundWords.some(found => found.word === word.toUpperCase());
                 const isHinted = hint?.word === word.toUpperCase();
                 return (
                   <div
                     key={word}
-                    className={`p-2 rounded-md transition-all ${
-                      isFound
-                        ? 'bg-green-100 text-green-800 line-through'
-                        : isHinted
+                    className={`p-2 rounded-md text-sm transition-all ${isFound
+                      ? 'bg-green-100 text-green-800 line-through'
+                      : isHinted
                         ? 'bg-yellow-100 text-yellow-800 font-bold animate-pulse'
-                        : 'bg-blue-50 text-sky-800'
-                    }`}
+                        : 'bg-blue-50 text-sky-800 hover:bg-blue-100'
+                      }`}
                   >
                     <span className="font-medium">{word}</span>
                   </div>
@@ -369,72 +369,120 @@ export class WordSearchGame extends GameBase {
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-blue-100">
-            <div
-              className="word-search-grid inline-grid gap-2 p-4 select-none"
-              style={{
-                gridTemplateColumns: `repeat(${gridSize}, minmax(30px, 1fr))`,
-                aspectRatio: '1/1',
-              }}
-              onMouseLeave={() => this.handleMouseUp()}
-              onMouseUp={() => this.handleMouseUp()}
-            >
-              {grid.map((row, rowIndex) =>
-                row.map((cell, colIndex) => {
-                  const cellId = `${rowIndex}-${colIndex}`;
-                  const isSelected = selectedCells.some(
-                    (selected) => selected.row === rowIndex && selected.col === colIndex
-                  );
-                  const isFound = foundWords.some(word =>
-                    word.cells.some(c => c.row === rowIndex && c.col === colIndex)
-                  );
-                  const isError = lastError && isSelected;
-                  const isHinted = hint?.cells.some(
-                    c => c.row === rowIndex && c.col === colIndex
-                  );
+          {/* Columna derecha - Sopa de letras (ocupa el espacio restante) */}
+          <div className="flex-1 min-w-2/4 w-fit bg-white p-4 rounded-lg shadow-sm border border-blue-100">
+            <div className="flex justify-center items-center">
+              <div
+                className="word-search-grid inline-grid select-none w-full max-w-[600px]"
+                style={{
+                  gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))`,
+                  aspectRatio: '1/1',
+                  gap: gridSize <= 10 ? '0.5rem' :
+                    gridSize <= 15 ? '0.4rem' :
+                      gridSize <= 20 ? '0.3rem' :
+                        '0.4rem',
+                  padding: gridSize <= 10 ? '0.5rem' :
+                    gridSize <= 15 ? '0.4rem' :
+                      gridSize <= 20 ? '0.3rem' :
+                        '0.4rem'
+                }}
+                onMouseLeave={() => this.handleMouseUp()}
+                onMouseUp={() => this.handleMouseUp()}
+              >
+                {grid.map((row, rowIndex) =>
+                  row.map((cell, colIndex) => {
+                    const cellId = `${rowIndex}-${colIndex}`;
+                    const isSelected = selectedCells.some(
+                      (selected) => selected.row === rowIndex && selected.col === colIndex
+                    );
+                    const isFound = foundWords.some(word =>
+                      word.cells.some(c => c.row === rowIndex && c.col === colIndex)
+                    );
+                    const isError = lastError && isSelected;
+                    const isHinted = hint?.cells.some(
+                      c => c.row === rowIndex && c.col === colIndex
+                    );
 
-                  return (
-                    <GridCell
-                      key={cellId}
-                      letter={cell}
-                      isSelected={isSelected}
-                      isDisabled={isFound}
-                      isHinted={isHinted}
-                      onCellClick={() => this.handleMouseDown(rowIndex, colIndex)}
-                      onMouseDown={() => this.handleMouseDown(rowIndex, colIndex)}
-                      onMouseEnter={() => this.handleMouseEnter(rowIndex, colIndex)}
-                      onMouseUp={() => this.handleMouseUp()}
-                      className={isError ? 'bg-red-200' : ''}
-                    />
-                  );
-                })
-              )}
+                    // Sistema de tamaños optimizado
+                    const cellSize = gridSize <= 10 ? 'md' :
+                      gridSize <= 15 ? 'sm' :
+                        gridSize <= 20 ? 'xs' :
+                          'xxs';
+
+                    const sizeConfig = {
+                      md: {
+                        text: 'text-xl',
+                        padding: 'p-2',
+                        minSize: 'min-w-[2rem] min-h-[2rem]'
+                      },
+                      sm: {
+                        text: 'text-lg',
+                        padding: 'p-1.5',
+                        minSize: 'min-w-[1.8rem] min-h-[1.8rem]'
+                      },
+                      xs: {
+                        text: 'text-md',
+                        padding: 'p-1',
+                        minSize: 'min-w-[1.6rem] min-h-[1.6rem]'
+                      },
+                      xxs: {
+                        text: 'text-sm',
+                        padding: 'p-1',
+                        minSize: 'min-w-[1.6rem] min-h-[1.6rem]'
+                      }
+                    };
+
+                    return (
+                      <GridCell
+                        key={cellId}
+                        letter={cell}
+                        isSelected={isSelected}
+                        isDisabled={isFound}
+                        isHinted={isHinted}
+                        onCellClick={() => this.handleMouseDown(rowIndex, colIndex)}
+                        onMouseDown={() => this.handleMouseDown(rowIndex, colIndex)}
+                        onMouseEnter={() => this.handleMouseEnter(rowIndex, colIndex)}
+                        onMouseUp={() => this.handleMouseUp()}
+                        className={`
+                ${isError ? 'bg-red-200 border-red-400 text-red-400' : ''} 
+                ${sizeConfig[cellSize].text}
+                ${sizeConfig[cellSize].padding}
+                ${sizeConfig[cellSize].minSize}
+                flex items-center justify-center
+                max-w-[2.5rem] max-h-[2.5rem]
+                transition-all duration-75
+                hover:bg-blue-50
+              `}
+                      />
+                    );
+                  })
+                )}
+              </div>
             </div>
           </div>
         </div>
 
         <div className="flex justify-center gap-4 mt-6">
           <button
-            className={`px-4 py-2 rounded-md font-medium transition ${
-              this.allWordsFound() 
-                ? 'bg-gray-300 cursor-not-allowed' 
-                : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
-            }`}
+            className={`px-4 py-2 rounded-md font-medium transition-all duration-200 transform ${this.allWordsFound()
+              ? 'bg-gray-300 cursor-not-allowed'
+              : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200 shadow-md hover:shadow-yellow-200/50 active:scale-95 active:shadow-inner'
+              }`}
             onClick={() => this.handleAction({ type: 'GIVE_HINT' })}
             disabled={this.allWordsFound()}
           >
             Dame una pista
           </button>
-          
+
           <button
-            className="px-4 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition"
+            className="px-4 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-all duration-200 transform shadow-md hover:shadow-blue-700/50 active:scale-95 active:shadow-inner"
             onClick={() => this.handleAction({ type: 'VALIDATE_SELECTION' })}
           >
             Validar
           </button>
-          
+
           <button
-            className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md font-medium hover:bg-gray-400 transition"
+            className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md font-medium hover:bg-gray-400 transition-all duration-200 transform shadow-md hover:shadow-gray-400/50 active:scale-95 active:shadow-inner"
             onClick={() => this.handleAction({ type: 'RESET_GAME' })}
           >
             Reiniciar

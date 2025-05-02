@@ -40,7 +40,7 @@ const GridCell: React.FC<GridCellProps> = ({
     if (isHinted) {
       return `bg-yellow-50 text-yellow-800 border-yellow-400 animate-pulse`;
     }
-    return `bg-white text-gray-800 border-gray-200 hover:bg-gray-50 cursor-pointer`;
+    return `bg-white text-gray-700 border-gray-300 hover:bg-gray-50 cursor-pointer`;
   };
 
   return (

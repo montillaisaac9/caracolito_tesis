@@ -380,7 +380,7 @@ export default function Activities() {
   if (loading && !activity) {
     return (
       <div className="flex justify-center items-center min-h-screen p-8">
-        <Spinner isLoading={true} message="Cargando actividad..." />
+        <Spinner isLoading={true} />
       </div>
     );
   }
@@ -433,9 +433,9 @@ export default function Activities() {
             opacity={confettiOpacity}
             colors={['#FFC700', '#FF0000', '#2E3191', '#41BBC7', '#34A853', '#FABA00', '#FBBC05']}
             confettiSource={{
-                x: 0, // Iniciar desde el borde izquierdo
+                x: 0, 
                 y: -50,
-                w: width, // Cubrir todo el ancho de la ventana
+                w: width, 
                 h: 10
             }}
             style={{
