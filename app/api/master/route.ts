@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 
 // Esquema para filtros opcionales (ejemplo)
 const filterSchema = z.object({
-  role: z.string().optional(),
+  role: z.string().optional() || undefined,
 }).optional();
 
 export async function GET(req: Request) {
@@ -32,7 +32,11 @@ export async function GET(req: Request) {
     });
 
     return NextResponse.json(
-      { count: userCount },
+      { 
+        data: {  
+          count: userCount 
+        }
+      },
       { status: 200 }
     );
 
