@@ -6,6 +6,7 @@ import useUserStore from "@/app/stores/useUserStore";
 import axios, { AxiosError } from "axios";
 import { RefreshCw } from "lucide-react";
 import { Skeleton, StatsSkeleton } from "@/app/components/ui/common/Skeleton";
+import { useParams, useRouter } from "next/navigation";
 
 // Tipos mejorados
 type Module = {
@@ -68,6 +69,7 @@ export default function Dashboard() {
     modules: null,
     stats: null,
   });
+  const router = useRouter();
 
   // Formateador de fechas
   const formatDate = useCallback((dateString: string) => {
@@ -143,6 +145,14 @@ export default function Dashboard() {
     loadData();
   }, [fetchStats, fetchModules, fetchActivities, user?.id]);
 
+  function navigateToActivity(id: string) {
+    router.push(`/pages/dashboard/activities/${id}`);
+  }
+
+  function navigateToModule(id: string) {
+    router.push(`/pages/dashboard/module/${id}`);
+  }
+
   return (
     <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
       {/* Encabezado con gradiente */}
@@ -217,6 +227,7 @@ export default function Dashboard() {
               {modules.map((module) => (
                 <div 
                   key={module.id}
+                  onClick={() => navigateToModule(module.id)}
                   className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm bg-white dark:bg-gray-800 hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-center flex-wrap gap-3 mb-2">
@@ -269,6 +280,7 @@ export default function Dashboard() {
             <div className="space-y-3">
               {activities.map((activity) => (
                 <div
+                  onClick={() => navigateToActivity(activity.id)}
                   key={activity.id}
                   className="p-4 border rounded-lg shadow-sm hover:shadow-md transition-all dark:border-gray-700 bg-gradient-to-r from-white to-gray-50 dark:from-gray-800 dark:to-gray-700/50"
                 >

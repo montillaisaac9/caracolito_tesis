@@ -28,14 +28,23 @@ export async function POST(req: NextRequest) {
         feedback: true,
         completed:true,
         id:true,
-        student: true,
-        activity:{
+        score: true,
+        student: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          }
+        },
+        createdAt: false,
+        updatedAt: false,
+/*         activity:{
             select:{
                 title:true,
                 type:true,
                 isActive:true
             }
-        }
+        } */
       },
     });
 
