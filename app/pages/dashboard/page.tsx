@@ -116,7 +116,8 @@ export default function Dashboard() {
   }, [fetchData]);
 
   const fetchModules = useCallback(async () => {
-    const data = await fetchData<{modules: Module[]}>("/api/module?page=1&limit=10", "modules");
+    if (!user?.id) return;
+    const data = await fetchData<{modules: Module[]}>(`/api/module?page=1&limit=10&userId=${user.id}`, "modules");
     if (data && data.modules) setModules(data.modules);
   }, [fetchData]);
 
@@ -134,7 +135,7 @@ export default function Dashboard() {
       try {
         await Promise.allSettled([
           fetchStats(), 
-          fetchModules(), 
+          user?.id ? fetchModules() : Promise.resolve(), 
           user?.id ? fetchActivities() : Promise.resolve()
         ]);
       } catch (error) {

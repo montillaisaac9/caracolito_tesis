@@ -3,14 +3,16 @@
 import api from "@/app/utils/api";
 import useUserStore from "@/app/stores/useUserStore";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, use } from "react";
 import Spinner from "@/app/components/ui/common/progresBar";
 import { GameFactory } from "@/app/lib/games/GameFactory";
 import { GameBase } from "@/app/lib/games/abstract/GameBase";
 import Confetti from "react-confetti";
 import useWindowSize from "react-use/lib/useWindowSize";
 import { Activity } from "@prisma/client";
-import { GameState, ProgressData, ScoreData } from "./components/interfaces";
+import { ActivityWithWordSearchConfig, GameState, ProgressData, ScoreData } from "./components/interfaces";
+import ExportButtons from "./components/ExportReportBtn";
+import { createActivityReportDto } from '@/app/types/reports';
 
 export default function Activities() {
   const params = useParams();
@@ -20,7 +22,7 @@ export default function Activities() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activity, setActivity] = useState<Activity | null>(null);
+  const [activity, setActivity] = useState<ActivityWithWordSearchConfig | null>(null);
   const [score, setScore] = useState<Array<ScoreData> | null>(null);
   const [finalyResponce, setFinalyResponce] = useState<{
     message?: string;
@@ -60,7 +62,7 @@ export default function Activities() {
       setLoading(true);
       setError(null);
 
-      const response = await api.get<{ data: Activity }>(
+      const response = await api.get<{ data: ActivityWithWordSearchConfig }>(
         `/activities?id=${activityId}`
       );
 
@@ -607,6 +609,17 @@ export default function Activities() {
             >
               Ver Puntuaciones
             </button>
+            {activity && score && (
+              <ExportButtons
+                reportData={createActivityReportDto({
+                  moduleTitle: activity.topic.module.title,
+                  topicTitle: activity.topic.title,
+                  activityTitle: activity.title,
+                  creatorName: activity.createdBy.name,
+                  scores: score,
+                })}
+              />
+            )}
             {user?.role !== "STUDENT" && (
               <div className="p-4 bg-gray-100 text-gray-800 rounded-lg text-center font-semibold">
                 {loading ? (

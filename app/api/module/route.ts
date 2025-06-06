@@ -23,19 +23,53 @@ export const ModuleSchema = z.object({
   }),
 });
 
-//OBTENER TODAS LOS MODULOS CON PAGINADO
+// OBTENER TODAS LOS MODULOS CON PAGINADO Y FILTRADO POR ID
 export async function GET(req: NextRequest) {
   try {
     const seach = req.nextUrl.searchParams;
     const page = seach.get("page") || "";
     const limit = seach.get("limit") || "";
+    const idUser = seach.get("userId");
+    const id = seach.get("id");
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
+    console.log(idUser)
     const prisma = new PrismaClient();
-    const modules = await prisma.module.findMany({
-      skip: offset,
-      take: parseInt(limit),
-    });
+    
+    let modules;
+
+    // Si se proporciona un ID específico, buscar solo ese módulo
+    if (id ) {
+      const module = await prisma.module.findUnique({
+        where: { id }
+      });
+      
+      if (!module) {
+        prisma.$disconnect();
+        return NextResponse.json(
+          message({ status: 404, message: "Módulo no encontrado", data: null })
+        );
+      }
+      
+      modules = [module]; // Mantener como array para consistencia con la respuesta original
+    } 
+    // Si hay filtro por usuario
+    else if (idUser != undefined) {
+      modules = await prisma.module.findMany({
+        where: {
+          createdById: idUser
+        },
+        skip: offset,
+        take: parseInt(limit),
+      });
+    } 
+    // Sin filtros, obtener todos
+    else {
+      modules = await prisma.module.findMany({
+        skip: offset,
+        take: parseInt(limit),
+      });
+    }
 
     prisma.$disconnect();
 
@@ -52,7 +86,6 @@ export async function GET(req: NextRequest) {
     );
   }
 }
-
 export async function POST(req: Request) {
   try {
     const body = await req.json();

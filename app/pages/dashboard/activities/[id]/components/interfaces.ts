@@ -1,5 +1,35 @@
 import { ActivityType, DifficultyLevel } from "@prisma/client";
 
+export interface ActivityWithWordSearchConfig {
+  id: string;
+  title: string;
+  type: 'WORD_SEARCH' | string; // Puedes extender esto con más tipos si deseas
+  difficulty: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | string;
+  config: JSON;
+  points: number;
+  timeLimit: number;
+  isActive: boolean;
+  createdAt: string; // ISO 8601
+  updatedAt: string;
+  topicId: string;
+  createdById: string;
+  topic: {
+    id: string;
+    title: string;
+    module: {
+      id: string;
+      title: string;
+    };
+  };
+  createdBy: {
+    id: string;
+    name: string;
+    email: string;
+    role: 'ADMIN' | 'TEACHER' | 'STUDENT' | string;
+  };
+}
+
+
 export interface Activity {
   id: string;
   title: string;
