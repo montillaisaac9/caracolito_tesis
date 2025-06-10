@@ -430,12 +430,16 @@ export default function Topic() {
       
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Detalles del Tópico</h1>
-        <button
-          onClick={() => setIsActivityModalOpen(true)}
-          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md"
-        >
-          + Nueva Actividad
-        </button>
+{
+          user?.role !== "STUDENT" && (
+            <button
+              onClick={() => setIsActivityModalOpen(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Crear Actividad
+            </button>
+          )
+}
       </div>
       
       {topic ? (

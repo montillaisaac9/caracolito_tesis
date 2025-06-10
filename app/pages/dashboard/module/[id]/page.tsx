@@ -3,6 +3,7 @@ import Spinner from "@/app/components/ui/common/progresBar";
 import api from "@/app/utils/api";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import useUserStore from "@/app/stores/useUserStore";
 
 interface Topic {
   id: string;
@@ -35,6 +36,7 @@ export default function ModulePage() {
   const [module, setModule] = useState<Module | null>(null);
   const [isTopicModalOpen, setIsTopicModalOpen] = useState(false);
   const router = useRouter();
+  const user = useUserStore((state) => state.user);
   // Estados para el formulario de tópico
   const [topicTitle, setTopicTitle] = useState("");
   const [topicContent, setTopicContent] = useState("");
@@ -119,12 +121,14 @@ export default function ModulePage() {
       
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Detalles del Módulo</h1>
-        <button
-          onClick={() => setIsTopicModalOpen(true)}
-          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md"
-        >
-          + Nuevo Tópico
-        </button>
+{user?.role !== "STUDENT" && (
+  <button
+    onClick={() => setIsTopicModalOpen(true)}
+    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md"
+  >
+    + Nuevo Tópico
+  </button>
+)}
       </div>
       
       {module ? (

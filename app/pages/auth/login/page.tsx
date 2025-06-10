@@ -1,5 +1,5 @@
 'use client';
-import { useState } from "react";
+import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import {
@@ -59,9 +59,9 @@ export default function LoginForm() {
       if (session?.token) {
         setToken(session.token);
       }
-
-      // Redirigimos según el rol del usuario
+      if (user?.role === "ADMIN" && user?.role !== "TEACHER") {
         router.push("/pages/dashboard");
+      } else router.push("/pages/dashboard/module");
       
       
     } catch (err) {

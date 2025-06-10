@@ -502,7 +502,7 @@ export default function Activities() {
           <div className="game-completed">
             <h2>¡Actividad Completada!</h2>
             <p>Puntuación: {score} puntos</p>
-            <button className="return-button" onClick={() => router.push('/activities')}>
+            <button className="return-button" onClick={() => router.push('/pages/dashboard/module')}>
               Volver a Actividades
             </button>
           </div>

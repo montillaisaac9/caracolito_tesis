@@ -458,7 +458,7 @@ export default function Activities() {
           </p>
           <p>{error}</p>
           <button
-            onClick={() => router.push("/activities")}
+            onClick={() => router.push("/pages/dashboard/module")}
             className="mt-4 px-4 py-2 bg-red-700 text-white rounded hover:bg-red-800 transition-colors"
           >
             Volver a Actividades
@@ -477,7 +477,7 @@ export default function Activities() {
             Parece que la actividad que buscas no existe o la URL es incorrecta.
           </p>
           <button
-            onClick={() => router.push("/activities")}
+            onClick={() => router.push("/pages/dashboard/module")}
             className="mt-4 px-4 py-2 bg-yellow-700 text-white rounded hover:bg-yellow-800 transition-colors"
           >
             Volver a Actividades
@@ -586,7 +586,7 @@ export default function Activities() {
 
                 <button
                   className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold transition-colors shadow"
-                  onClick={() => router.push("/activities")}
+                  onClick={() => router.push("/pages/dashboard/module")}
                 >
                   Comenzar de nuevo
                 </button>

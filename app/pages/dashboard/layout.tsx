@@ -5,9 +5,10 @@ import { FiHome, FiBook, FiUser } from "react-icons/fi";
 import Sidebar from "@/app/components/ui/common/sidebar";
 
 const initialLinks = [
-  { name: "Dashboard", href: "/pages/dashboard", icon: <FiHome />, select: true },
+  { name: "Dashboard", href: "/pages/dashboard", icon: <FiHome />, select: true , role: "ADMIN" },
+  { name: "Dashboard", href: "/pages/dashboard", icon: <FiHome />, select: true , role: "TEACHER" },
   { name: "Módulos", href: "/pages/dashboard/module", icon: <FiBook />, select: false },
-  { name: "Perfil", href: "/pages/dashboard/perfil", icon: <FiUser />, select: false },
+  { name: "Perfiles", href: "/pages/dashboard/perfil", icon: <FiUser />, select: false, role: "ADMIN" },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
