@@ -1,9 +1,10 @@
 "use client";
+import React, { useEffect, useState, useCallback } from "react";
 import Spinner from "@/app/components/ui/common/progresBar";
 import api from "@/app/utils/api";
-import { useEffect, useState, useCallback } from "react";
 import useUserStore from "@/app/stores/useUserStore";
 import { useRouter } from "next/navigation";
+import { Gamepad2 } from "lucide-react";
 
 interface ModuleData {
   id: string;
@@ -425,19 +426,29 @@ export default function ModulesAdmin() {
 
       {/* Modules Table */}
       <div className="bg-white shadow-lg rounded-lg overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-800 text-white">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
             <tr>
-              <th className="py-4 px-6 text-left font-semibold">Título</th>
-              <th className="py-4 px-6 text-left font-semibold">Descripción</th>
-              <th className="py-4 px-6 text-left font-semibold">Orden</th>
-              <th className="py-4 px-6 text-left font-semibold">Estado</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Título
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Descripción
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Orden
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Estado
+              </th>
               {canEditDelete && (
-                <th className="py-4 px-6 text-left font-semibold">Acciones</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Acciones
+                </th>
               )}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="bg-white divide-y divide-gray-200">
             {modules.length === 0 ? (
               <tr>
                 <td colSpan={canEditDelete ? 5 : 4} className="text-center py-8 text-gray-500">
@@ -446,36 +457,46 @@ export default function ModulesAdmin() {
               </tr>
             ) : (
               modules.map((module) => (
-                <tr 
-                  key={module.id} 
-                  className="border-b hover:bg-gray-50 cursor-pointer"
-                  onClick={() => handleRowClick(module.id)}
-                >
-                  <td className="py-4 px-6 font-medium text-gray-900">{module.title}</td>
-                  <td className="py-4 px-6 text-gray-700">
-                    {module.description?.length > 50 
-                      ? `${module.description.substring(0, 50)}...` 
-                      : module.description || 'Sin descripción'}
-                  </td>
-                  <td className="py-4 px-6 text-gray-700">{module.order}</td>
-                  <td className="py-4 px-6">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      module.isActive 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {module.isActive ? 'Activo' : 'Inactivo'}
-                    </span>
-                  </td>
-                  {canEditDelete && (
-                    <td 
-                      className="py-4 px-6"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {renderActionButtons(module)}
+                <React.Fragment key={module.id}>
+                  <tr className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10">
+                          <Gamepad2 className="h-6 w-6 text-gray-500" />
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">
+                            {module.title}
+                          </div>
+                        </div>
+                      </div>
                     </td>
-                  )}
-                </tr>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900">{module.description}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {module.order}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${module.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        {module.isActive ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </td>
+                    {canEditDelete && (
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        {renderActionButtons(module)}
+                      </td>
+                    )}
+                  </tr>
+                  <tr>
+                    <td colSpan={canEditDelete ? 5 : 4} className="px-6 py-2 text-xs text-gray-500">
+                      <div className="flex items-center">
+                        <Gamepad2 className="h-4 w-4 mr-1 text-gray-400" />
+                        <span>Contiene juegos interactivos</span>
+                      </div>
+                    </td>
+                  </tr>
+                </React.Fragment>
               ))
             )}
           </tbody>

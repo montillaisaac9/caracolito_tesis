@@ -288,14 +288,15 @@ export default function LoginForm() {
                 Correo electrónico
               </Label>
               <Input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4DAF6] focus:border-[#1E0A63] w-full"
-                placeholder="Ingrese su correo"
-                required={true}
-              />
+  type="email"
+  name="email"
+  value={formData.email}
+  onChange={handleChange}
+  className="bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4DAF6] focus:border-[#1E0A63] w-full"
+  style={{ color: 'black' }}
+  placeholder="Ingrese su correo"
+  required={true}
+/>
             </div>
             <div className="space-y-2">
               <Label htmlFor="password" style={{ color: colors.text.primary }}>

@@ -1,37 +1,17 @@
 import React from 'react';
 
-interface InputProps {
-  type: string;
-  placeholder: string;
-  name: string;
-  value?: string;
-  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   className?: string;
-  required?: boolean; // Cambiado de string a boolean
-  minLength?: number; // Agregado minLength como número opcional
 }
 
 const Input: React.FC<InputProps> = ({
-  type,
-  placeholder,
-  name,
-  value,
-  onChange,
-  className,
-  required,
-  minLength
+  className = '',
+  ...props
 }) => {
   return (
     <input
-      id={name}
-      type={type}
-      name={name}
-      placeholder={placeholder}
-      value={value}
-      onChange={onChange}
-      className={`w-full bg-gray-700 text-white border border-gray-600 rounded px-3 py-2 focus:outline-none focus:border-gray-500 ${className}`}
-      required={required}
-      minLength={minLength}
+      {...props}
+      className={`w-full bg-white text-black border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#A4DAF6] focus:border-[#1E0A63] ${className}`}
     />
   );
 };
