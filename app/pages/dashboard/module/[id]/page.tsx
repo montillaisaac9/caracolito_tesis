@@ -47,9 +47,9 @@ export default function ModulePage() {
       setLoading(true);
       setError(null);
      
-      const response = await api.get(`/module/id?id=${moduleId}`);
-      if (response.status === 200 && response.data.data?.length > 0) {
-        setModule(response.data.data[0]);
+      const response = await api.get(`/module/${moduleId}`);
+      if (response.status === 200 && response.data.data) {
+        setModule(response.data.data);
       } else {
         setError("No se encontró el módulo solicitado");
       }

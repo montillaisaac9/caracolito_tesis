@@ -20,21 +20,22 @@ interface SidebarProps {
   onSelectLink: (href: string) => void;
 }
 
+const colors = {
+  primary: '#1E0A63',
+  secondary: '#241476',
+  accent: '#A4DAF6',
+  lightSecondary: '#D3F0FF',
+  background: '#F2FBFF',
+  text: {
+    primary: '#1F2937',
+    secondary: '#4B5563',
+    light: '#F9FAFB',
+  },
+} as const;
+
 export default function Sidebar({ links, isOpen, setIsOpen, onSelectLink }: SidebarProps) {
   const router = useRouter();
   const { user, isAuthenticated, logout } = useUserStore();
-
-  const getRoleColor = () => {
-    switch (user?.role) {
-      case "TEACHER":
-        return "bg-blue-600";
-      case "ADMIN":
-        return "bg-purple-600";
-      case "STUDENT":
-      default:
-        return "bg-green-600";
-    }
-  };
 
   const handleLogout = () => {
     logout();
@@ -44,36 +45,57 @@ export default function Sidebar({ links, isOpen, setIsOpen, onSelectLink }: Side
   return (
     <div
       className={`
-        bg-gray-900 text-white flex flex-col
+        flex flex-col
         ${isOpen ? "w-64" : "w-20"}
         transition-all duration-300
         h-screen
         sticky top-0
       `}
+      style={{ backgroundColor: colors.primary }}
     >
+      {/* Logo */}
+      <div className="p-4 border-b" style={{ borderColor: colors.secondary }}>
+        <div className={`flex items-center justify-center ${isOpen ? 'h-16' : 'h-14'}`}>
+          <img 
+            src="/logo.png" 
+            alt="Logo" 
+            className={`transition-all duration-300 ${isOpen ? 'h-48 w-auto' : 'h-14 w-12 rounded-full object-cover'}`}
+          />
+        </div>
+      </div>
+
       <div className="flex justify-end p-2">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="p-2 text-white hover:bg-gray-700 rounded-full"
+          className="p-2 rounded-full hover:bg-opacity-20 hover:bg-white"
+          style={{ color: colors.accent }}
         >
           {isOpen ? <FiChevronLeft /> : <FiChevronRight />}
         </button>
       </div>
 
       {isAuthenticated && (
-        <div className="mb-6 mt-2">
-          <div className="flex items-center space-x-3 p-3 bg-gray-800 rounded-lg">
+        <div className="mb-6 mt-2 px-3">
+          <div className="flex items-center space-x-3 p-3 rounded-lg" style={{ backgroundColor: colors.secondary }}>
             <div
-              className={`${getRoleColor()} rounded-full w-10 h-10 flex items-center justify-center text-white font-medium`}
+              className={`rounded-full w-10 h-10 flex items-center justify-center`}
+              style={{ backgroundColor: colors.accent, color: colors.primary }}
             >
               {user?.name?.charAt(0).toUpperCase() || "U"}
             </div>
             <div
               className={`transition-opacity duration-300 ${isOpen ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`}
             >
-              <div className="font-medium truncate">{user?.name || "Usuario"}</div>
-              <div className="text-xs text-gray-400 truncate">{user?.email}</div>
-              <div className="text-xs bg-gray-700 px-2 py-0.5 rounded mt-1 inline-block">
+              <div className="font-medium truncate" style={{ color: colors.text.light }}>{user?.name || "Usuario"}</div>
+              <div className="text-xs truncate" style={{ color: colors.accent }}>{user?.email}</div>
+              <div 
+                className="text-xs px-2 py-0.5 rounded mt-1 inline-block"
+                style={{ 
+                  backgroundColor: colors.accent,
+                  color: colors.primary,
+                  fontWeight: 500 
+                }}
+              >
                 {user?.role === "TEACHER" && "Profesor"}
                 {user?.role === "STUDENT" && "Estudiante"}
                 {user?.role === "ADMIN" && "Administrador"}
@@ -94,42 +116,55 @@ export default function Sidebar({ links, isOpen, setIsOpen, onSelectLink }: Side
                     onSelectLink(link.href);
                     router.push(link.href);
                   }}
-                  className={`w-full flex items-center gap-3 p-2 rounded-md transition-colors duration-300 
-                    ${link.select ? "bg-blue-600 text-white font-semibold" : "hover:bg-gray-700 text-gray-300"}`}
+                  className={`w-full flex items-center rounded-lg transition-all duration-300 
+                    ${isOpen ? 'py-3 px-4' : 'p-3 justify-center'}
+                    ${link.select 
+                      ? `text-white font-semibold` 
+                      : `text-gray-300 hover:bg-opacity-20 hover:bg-white`}`}
+                  style={{
+                    backgroundColor: link.select ? colors.secondary : 'transparent',
+                    minHeight: '48px',
+                  }}
                 >
-                  <span className="text-xl">{link.icon}</span>
-                  <span
-                    className={`whitespace-nowrap overflow-hidden transition-opacity duration-300 ${
-                      isOpen ? "opacity-100" : "opacity-0 w-0"
-                    }`}
+                  <span 
+                    className={`${isOpen ? 'text-xl' : 'text-2xl'}`} 
+                    style={{ 
+                      color: link.select ? colors.accent : 'currentColor',
+                      minWidth: '24px',
+                      display: 'flex',
+                      justifyContent: 'center'
+                    }}
                   >
-                    {link.name}
+                    {link.icon}
                   </span>
+                  {isOpen && (
+                    <span className="ml-3 text-base">
+                      {link.name}
+                    </span>
+                  )}
                 </button>
               )
           )}
         </div>
       </nav>
 
-      {isAuthenticated && (
-        <div className="mt-auto px-3 pb-6">
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 p-2 rounded-md hover:bg-red-700/50 text-gray-300 hover:text-white"
-          >
-            <span className="text-xl">
-              <FiLogOut />
-            </span>
-            <span
-              className={`whitespace-nowrap overflow-hidden transition-opacity duration-300 ${
-                isOpen ? "opacity-100" : "opacity-0 w-0"
-              }`}
-            >
+      <div className="p-4 border-t" style={{ borderColor: colors.secondary }}>
+        <button
+          onClick={handleLogout}
+          className={`w-full flex items-center rounded-lg transition-colors duration-300 py-3 ${isOpen ? 'px-4' : 'justify-center'}`}
+          style={{ 
+            color: colors.accent,
+            minHeight: '48px',
+          }}
+        >
+          <FiLogOut className={`${isOpen ? 'text-xl' : 'text-2xl'}`} />
+          {isOpen && (
+            <span className="ml-3 text-base">
               Cerrar sesión
             </span>
-          </button>
-        </div>
-      )}
+          )}
+        </button>
+      </div>
     </div>
   );
 }

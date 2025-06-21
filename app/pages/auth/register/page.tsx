@@ -22,8 +22,20 @@ const userSchema = z.object({
   lastName: z.string().min(3, "El apellido debe tener al menos 3 caracteres"),
   email: z.string().email("Debe ser un correo electrónico válido"),
   password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
-  role: z.enum(["STUDENT", "TEACHER"]),
+  role: z.enum(["STUDENT"]),
 });
+
+const colors = {
+  background: '#f7f7f7',
+  accent: '#241476',
+  primary: '#1E0A63',
+  secondary: '#A4DAF6',
+  text: {
+    light: '#ffffff',
+    secondary: '#666666',
+  },
+  error: '#ff0000',
+}
 
 const Home: React.FC = () => {
   // Estado para los datos del formulario
@@ -87,22 +99,38 @@ const Home: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center px-4 relative">
-      {/* Spinner con opacidad y contenido no interactuable */}
-      <Spinner isLoading={loading} />
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8 relative" style={{ backgroundColor: colors.background }}>
+      {/* Background Image with Overlay */}
+      <div 
+        className="fixed inset-0 z-0"
+        style={{
+          backgroundImage: `url(/background.jpg)`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          filter: 'blur(5px)',
+          WebkitFilter: 'blur(5px)',
+          transform: 'scale(1.02)',
+        }}
+      />
+      <div className="fixed inset-0 bg-black/50 z-0" />
       
-      <h1 className="text-white text-3xl font-bold mb-2">
-        Entorno de Aprendizaje Interactivo
-      </h1>
-      <p className="text-white text-sm mb-8 text-center">
-        Fundamentos en Informática - Universidad Nacional Experimental Rómulo
-        Gallegos
-      </p>
-  
-      <Card className="w-full max-w-lg border-2 border-gray-200">
+      <div className="relative z-10 w-full max-w-md flex flex-col items-center mb-8">
+        <div className="mb-6 w-full">
+          <img src="/logo.png" alt="Logo" className="w-full h-auto max-h-48 object-contain" />
+        </div>
+        <h1 className="text-3xl font-bold mb-2 text-white text-center">
+          Entorno de Aprendizaje Interactivo
+        </h1>
+        <p className="text-sm text-white text-center">
+          Fundamentos en Informática - Universidad Nacional Experimental Rómulo
+          Gallegos
+        </p>
+      </div>
+      
+      <Card className="w-full max-w-md bg-white/90 backdrop-blur-sm p-6 shadow-lg relative border-2 border-[#241476] z-10">
         <CardHeader>
-          <CardTitle className="text-center">Crear una cuenta</CardTitle>
-          <CardDescription className="text-center">
+          <CardTitle className="text-center" style={{ color: colors.primary }}>Crear una cuenta</CardTitle>
+          <CardDescription className="text-center" style={{ color: colors.text.secondary }}>
             Ingrese sus datos para registrarse
           </CardDescription>
         </CardHeader>
@@ -116,9 +144,10 @@ const Home: React.FC = () => {
                   name="firstName"
                   value={formData.firstName}
                   onChange={handleChange}
+                  className="bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4DAF6] focus:border-[#1E0A63] w-full"
                 />
                 {errors.firstName && (
-                  <p className="text-red-500 text-sm">{errors.firstName}</p>
+                  <p className="text-sm mt-1" style={{ color: colors.error }}>{errors.firstName}</p>
                 )}
               </div>
               <div>
@@ -128,68 +157,54 @@ const Home: React.FC = () => {
                   name="lastName"
                   value={formData.lastName}
                   onChange={handleChange}
+                  className="bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4DAF6] focus:border-[#1E0A63] w-full"
                 />
                 {errors.lastName && (
-                  <p className="text-red-500 text-sm">{errors.lastName}</p>
+                  <p className="text-sm mt-1" style={{ color: colors.error }}>{errors.lastName}</p>
                 )}
               </div>
             </div>
-            <Input
-              type="email"
-              placeholder="Correo electrónico"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-            />
-            {errors.email && (
-              <p className="text-red-500 text-sm">{errors.email}</p>
-            )}
-            <Input
-              type="password"
-              placeholder="Contraseña"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-            />
-            {errors.password && (
-              <p className="text-red-500 text-sm">{errors.password}</p>
-            )}
-  
-            {/* Radio Button centrado y con estilo verde */}
-            <div className="flex justify-center my-4 space-x-[5px]">
-              <RadioButton
-                name="role"
-                label="Estudiante"
-                value="STUDENT"
-                checked={formData.role === "STUDENT"}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    role: e.target.value as "STUDENT",
-                  })
-                }
+            <div>
+              <Input
+                type="email"
+                placeholder="Correo electrónico"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className="bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4DAF6] focus:border-[#1E0A63] w-full"
               />
-              <RadioButton
-                name="role"
-                label="Profesor"
-                value="TEACHER"
-                checked={formData.role === "TEACHER"}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    role: e.target.value as "TEACHER",
-                  })
-                }
+              {errors.email && (
+                <p className="text-sm mt-1" style={{ color: colors.error }}>{errors.email}</p>
+              )}
+            </div>
+            <div>
+              <Input
+                type="password"
+                placeholder="Contraseña"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                className="bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#A4DAF6] focus:border-[#1E0A63] w-full"
               />
+              {errors.password && (
+                <p className="text-sm mt-1" style={{ color: colors.error }}>{errors.password}</p>
+              )}
             </div>
   
-            {/* Botón de Registro centrado */}
-            <div className="flex justify-center">
+            <div className="flex justify-center my-4">
               <button
                 type="submit"
-                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md"
+                className="w-full px-4 py-2 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  backgroundColor: colors.primary,
+                  color: colors.text.light,
+                  transition: 'background-color 0.2s',
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = colors.secondary}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = colors.primary}
+                disabled={loading}
               >
-                Registrarse
+                {loading ? 'Registrando...' : 'Registrarse'}
               </button>
             </div>
           </form>
@@ -197,7 +212,8 @@ const Home: React.FC = () => {
         <CardFooter className="flex justify-center">
           <button
             onClick={handleNavigation}
-            className="text-green-600 hover:underline"
+            className="font-medium hover:underline"
+            style={{ color: colors.primary }}
           >
             ¿Ya tienes cuenta? Inicia sesión
           </button>
@@ -205,7 +221,6 @@ const Home: React.FC = () => {
       </Card>
     </div>
   );
-  
 };
 
 export default Home;
