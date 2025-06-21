@@ -274,9 +274,6 @@ export default function LoginForm() {
       </div>
       
       <Card className="w-full max-w-md bg-white/90 backdrop-blur-sm p-6 shadow-lg relative border-2 border-[#241476] z-10">
-        <button className="absolute top-4 right-4" style={{ color: colors.secondary }}>
-          <X className="h-5 w-5" />
-        </button>
         
         <CardHeader>
           <CardTitle className="text-center text-xl" style={{ color: colors.primary }}>Iniciar sesión</CardTitle>
