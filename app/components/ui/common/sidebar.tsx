@@ -116,7 +116,7 @@ export default function Sidebar({ links, isOpen, setIsOpen, onSelectLink }: Side
                     onSelectLink(link.href);
                     router.push(link.href);
                   }}
-                  className={`w-full flex items-center rounded-lg transition-all duration-300 
+                  className={`w-full flex cursor-pointer items-center rounded-lg transition-all duration-300 
                     ${isOpen ? 'py-3 px-4' : 'p-3 justify-center'}
                     ${link.select 
                       ? `text-white font-semibold` 
@@ -151,7 +151,7 @@ export default function Sidebar({ links, isOpen, setIsOpen, onSelectLink }: Side
       <div className="p-4 border-t" style={{ borderColor: colors.secondary }}>
         <button
           onClick={handleLogout}
-          className={`w-full flex items-center rounded-lg transition-colors duration-300 py-3 ${isOpen ? 'px-4' : 'justify-center'}`}
+          className={`w-full flex items-center cursor-pointer rounded-lg transition-colors duration-300 py-3 ${isOpen ? 'px-4' : 'justify-center'}`}
           style={{ 
             color: colors.accent,
             minHeight: '48px',

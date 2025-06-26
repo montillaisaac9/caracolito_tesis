@@ -458,7 +458,7 @@ export default function ModulesAdmin() {
             ) : (
               modules.map((module) => (
                 <React.Fragment key={module.id}>
-                  <tr className="hover:bg-gray-50">
+                  <tr className="hover:bg-gray-50 cursor-pointer" onClick={() => handleRowClick(module.id)}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">

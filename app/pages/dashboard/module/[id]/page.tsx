@@ -124,7 +124,7 @@ export default function ModulePage() {
 {user?.role !== "STUDENT" && (
   <button
     onClick={() => setIsTopicModalOpen(true)}
-    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md"
+    className="bg-green-600 hover:bg-green-700 cursor-pointer text-white px-4 py-2 rounded-md"
   >
     + Nuevo Tópico
   </button>

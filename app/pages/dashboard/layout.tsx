@@ -74,7 +74,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="flex items-center">
             <button
               onClick={toggleSidebar}
-              className="p-2 rounded-full hover:bg-opacity-10 hover:bg-gray-800 mr-2"
+              className="p-2 rounded-full hover:bg-opacity-10 hover:bg-gray-300 cursor-pointer mr-2"
               style={{ color: colors.primary }}
             >
               <FiMenu className="h-5 w-5" />
@@ -86,7 +86,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           
           <div className="flex items-center space-x-4">
             <button 
-              className="p-2 rounded-full hover:bg-opacity-10 hover:bg-gray-800"
+              className="p-2 rounded-full hover:bg-opacity-10 hover:bg-gray-300 cursor-pointer"
               style={{ color: colors.primary }}
             >
             </button>
