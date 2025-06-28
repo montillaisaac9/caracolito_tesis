@@ -1,6 +1,5 @@
 import { GameBase } from "./abstract/GameBase";
-import React from 'react';
-import Confetti from 'react-confetti';
+import React from "react";
 
 export class MatchingGame extends GameBase {
   constructor(activity) {
@@ -15,33 +14,44 @@ export class MatchingGame extends GameBase {
       lastError: null,
       hint: null,
       started: false,
-      showConfetti: false
+      showConfetti: false,
     };
+
+    this.sountrackRef = React.createRef();
+    this.jumpRef = React.createRef();
+    this.validationRef = React.createRef();
+    this.notValidationRef = React.createRef();
   }
 
   initializeGame() {
     const config = this.activity.config;
-    if (!config?.matching || !Array.isArray(config.matching.pairs) || config.matching.pairs.length === 0) {
-      throw new Error("La configuración del juego de emparejamiento es inválida o está ausente.");
+    if (
+      !config?.matching ||
+      !Array.isArray(config.matching.pairs) ||
+      config.matching.pairs.length === 0
+    ) {
+      throw new Error(
+        "La configuración del juego de emparejamiento es inválida o está ausente."
+      );
     }
     this.gameData = this.generateMatchingGame(config);
   }
 
   handleAction(action) {
-    switch(action.type) {
-      case 'SELECT_LEFT':
+    switch (action.type) {
+      case "SELECT_LEFT":
         this.handleLeftSelection(action.payload.index);
         break;
-      case 'SELECT_RIGHT':
+      case "SELECT_RIGHT":
         this.handleRightSelection(action.payload.index);
         break;
-      case 'START_GAME':
+      case "START_GAME":
         this.updateGameState({ started: true });
         break;
-      case 'RESET_GAME':
+      case "RESET_GAME":
         this.resetGame();
         break;
-      case 'GIVE_HINT':
+      case "GIVE_HINT":
         this.giveHint();
         break;
       default:
@@ -50,16 +60,23 @@ export class MatchingGame extends GameBase {
   }
 
   render() {
+
     if (!this.gameState.started) {
       return (
         <div className="max-w-md mx-auto p-8 bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl">
           <div className="text-center">
-            <h2 className="text-3xl font-bold text-blue-600 mb-6">{this.activity.title}</h2>
-            
+            <h2 className="text-3xl font-bold text-blue-600 mb-6">
+              {this.activity.title}
+            </h2>
+
             <div className="bg-white p-6 rounded-lg shadow-sm mb-8">
-              <h3 className="text-xl font-semibold text-gray-800 mb-4">Instrucciones</h3>
-              <p className="text-gray-600 mb-4">Encuentra todos los pares que coincidan</p>
-              
+              <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                Instrucciones
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Encuentra todos los pares que coincidan
+              </p>
+
               <ul className="text-left space-y-2 text-gray-700">
                 <li className="flex items-start">
                   <span className="mr-2">👉</span>
@@ -71,7 +88,9 @@ export class MatchingGame extends GameBase {
                 </li>
                 <li className="flex items-start">
                   <span className="mr-2">👉</span>
-                  <span>Si forman un par correcto, permanecerán resaltados</span>
+                  <span>
+                    Si forman un par correcto, permanecerán resaltados
+                  </span>
                 </li>
                 <li className="flex items-start">
                   <span className="mr-2">👉</span>
@@ -79,10 +98,10 @@ export class MatchingGame extends GameBase {
                 </li>
               </ul>
             </div>
-            
-            <button 
+
+            <button
               className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition duration-300 transform hover:scale-105"
-              onClick={() => this.handleAction({ type: 'START_GAME' })}
+              onClick={() => this.handleAction({ type: "START_GAME" })}
             >
               Comenzar Juego
             </button>
@@ -92,26 +111,70 @@ export class MatchingGame extends GameBase {
     }
 
     const { leftItems, rightItems, pairs } = this.gameData || {};
-    const { matches, selectedLeft, selectedRight, score, completed, hint, showConfetti } = this.gameState;
+    const {
+      matches,
+      selectedLeft,
+      selectedRight,
+      score,
+      completed,
+      hint,
+      showConfetti,
+    } = this.gameState;
 
+        if (this.sountrackRef.current) {
+      this.sountrackRef.current.volume = 0.6;
+      this.sountrackRef.current
+        .play()
+        .then(() => this.updateGameState({ isPlaying: true }))
+        .catch((error) => console.error("Error al reproducir audio:", error));
+    }
     return (
       <div className="w-2/4 p-4">
-        {showConfetti && <Confetti recycle={false} numberOfPieces={500} onConfettiComplete={() => this.updateGameState({ showConfetti: false })} />}
-        
+        <audio ref={this.jumpRef} src="/jump.wav" style={{ display: "none" }} />
+        <audio
+          ref={this.validationRef}
+          src="/validacion.wav"
+          style={{ display: "none" }}
+        />
+        <audio
+          ref={this.notValidationRef}
+          src="/notValidation.mp3"
+          style={{ display: "none" }}
+        />
+        <audio
+          ref={this.sountrackRef}
+          src="/sountrack.mp3"
+          loop
+          style={{ display: "none" }}
+        />
+        {showConfetti && (
+          <Confetti
+            recycle={false}
+            numberOfPieces={500}
+            onConfettiComplete={() =>
+              this.updateGameState({ showConfetti: false })
+            }
+          />
+        )}
+
         <header className="mb-8 pb-4 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-blue-600 text-center mb-4">{this.activity.title}</h2>
-          
+          <h2 className="text-2xl font-bold text-blue-600 text-center mb-4">
+            {this.activity.title}
+          </h2>
+
           <div className="flex justify-around mb-4">
             <div className="text-center">
               <span className="block text-sm text-gray-600">Puntuación</span>
               <span className="text-lg font-bold">{score}</span>
             </div>
-            
+
             <div className="text-center">
               <span className="block text-sm text-gray-600">Intentos</span>
-              <span className="text-lg font-bold">{this.gameState.attempts}</span>
+              <span className="text-lg font-bold">
+                {this.gameState.attempts}
+              </span>
             </div>
-            
+
             <div className="text-center">
               <span className="block text-sm text-gray-600">Pares</span>
               <span className="text-lg font-bold">
@@ -121,9 +184,13 @@ export class MatchingGame extends GameBase {
           </div>
 
           <div className="w-full bg-gray-200 rounded-full h-2.5">
-            <div 
-              className="bg-green-500 h-2.5 rounded-full transition-all duration-500" 
-              style={{ width: `${(Object.keys(matches).length / (pairs?.length || 1)) * 100}%` }}
+            <div
+              className="bg-green-500 h-2.5 rounded-full transition-all duration-500"
+              style={{
+                width: `${
+                  (Object.keys(matches).length / (pairs?.length || 1)) * 100
+                }%`,
+              }}
             />
           </div>
         </header>
@@ -136,22 +203,42 @@ export class MatchingGame extends GameBase {
                 const isSelected = selectedLeft === index;
                 const isMatched = matches[index] !== undefined;
                 const isHinted = hint?.left === index;
-                const isError = this.gameState.lastError && selectedLeft === index;
+                const isError =
+                  this.gameState.lastError && selectedLeft === index;
 
                 return (
                   <div
                     key={item.id}
-                    onClick={() => !isMatched && this.handleAction({ 
-                      type: 'SELECT_LEFT', 
-                      payload: { index } 
-                    })}
+                    onClick={() =>
+                      !isMatched &&
+                      this.handleAction({
+                        type: "SELECT_LEFT",
+                        payload: { index },
+                      })
+                    }
                     className={`
                       p-3 rounded-md transition-all duration-200 cursor-pointer text-center
-                      ${isMatched ? 'bg-green-100 border border-green-300 cursor-default' : ''}
-                      ${isSelected ? 'bg-blue-100 border-2 border-blue-400 scale-105' : ''}
-                      ${isHinted ? 'border-3 border-sky-500 border-dashed animate-pulse' : ''}
-                      ${isError ? 'bg-red-100 border-2 border-red-400' : ''}
-                      ${!isMatched && !isSelected ? 'bg-white border border-gray-300 hover:shadow-md hover:scale-[1.02]' : ''}
+                      ${
+                        isMatched
+                          ? "bg-green-100 border border-green-300 cursor-default"
+                          : ""
+                      }
+                      ${
+                        isSelected
+                          ? "bg-blue-100 border-2 border-blue-400 scale-105"
+                          : ""
+                      }
+                      ${
+                        isHinted
+                          ? "border-3 border-sky-500 border-dashed animate-pulse"
+                          : ""
+                      }
+                      ${isError ? "bg-red-100 border-2 border-red-400" : ""}
+                      ${
+                        !isMatched && !isSelected
+                          ? "bg-white border border-gray-300 hover:shadow-md hover:scale-[1.02]"
+                          : ""
+                      }
                     `}
                   >
                     {item.content}
@@ -168,22 +255,42 @@ export class MatchingGame extends GameBase {
                 const isSelected = selectedRight === index;
                 const isMatched = Object.values(matches).includes(index);
                 const isHinted = hint?.right === index;
-                const isError = this.gameState.lastError && selectedRight === index;
+                const isError =
+                  this.gameState.lastError && selectedRight === index;
 
                 return (
                   <div
                     key={item.id}
-                    onClick={() => !isMatched && this.handleAction({ 
-                      type: 'SELECT_RIGHT', 
-                      payload: { index } 
-                    })}
+                    onClick={() =>
+                      !isMatched &&
+                      this.handleAction({
+                        type: "SELECT_RIGHT",
+                        payload: { index },
+                      })
+                    }
                     className={`
                       p-3 rounded-md transition-all duration-200 cursor-pointer text-center 
-                      ${isMatched ? 'bg-green-100 border border-green-300 cursor-default' : ''}
-                      ${isSelected ? 'bg-yellow-100 border-2 border-yellow-400 scale-105' : ''}
-                      ${isHinted ? 'border-3 border-sky-500 border-dashed animate-pulse' : ''}
-                      ${isError ? 'bg-red-100 border-2 border-red-400' : ''}
-                      ${!isMatched && !isSelected ? 'bg-white border border-gray-300 hover:shadow-md hover:scale-[1.02]' : ''}
+                      ${
+                        isMatched
+                          ? "bg-green-100 border border-green-300 cursor-default"
+                          : ""
+                      }
+                      ${
+                        isSelected
+                          ? "bg-yellow-100 border-2 border-yellow-400 scale-105"
+                          : ""
+                      }
+                      ${
+                        isHinted
+                          ? "border-3 border-sky-500 border-dashed animate-pulse"
+                          : ""
+                      }
+                      ${isError ? "bg-red-100 border-2 border-red-400" : ""}
+                      ${
+                        !isMatched && !isSelected
+                          ? "bg-white border border-gray-300 hover:shadow-md hover:scale-[1.02]"
+                          : ""
+                      }
                     `}
                   >
                     {item.content}
@@ -195,17 +302,17 @@ export class MatchingGame extends GameBase {
         </div>
 
         <div className="flex justify-center gap-4 mb-8">
-          <button 
+          <button
             className={`px-4 py-2 bg-yellow-100 rounded-lg text-yellow-800 hover:bg-yellow-200 shadow-md hover:shadow-yellow-200/50 active:scale-95 active:shadow-inner`}
-            onClick={() => this.handleAction({ type: 'GIVE_HINT' })}
+            onClick={() => this.handleAction({ type: "GIVE_HINT" })}
             disabled={completed}
           >
             Dame una pista
           </button>
-          
-          <button 
+
+          <button
             className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md font-medium hover:bg-gray-400 transition-all duration-200 transform shadow-md hover:shadow-gray-400/50 active:scale-95 active:shadow-inner"
-            onClick={() => this.handleAction({ type: 'RESET_GAME' })}
+            onClick={() => this.handleAction({ type: "RESET_GAME" })}
           >
             Reiniciar Juego
           </button>
@@ -213,12 +320,20 @@ export class MatchingGame extends GameBase {
 
         {completed && (
           <div className="text-center p-6 bg-blue-50 rounded-lg border border-blue-200">
-            <h3 className="text-2xl font-bold text-blue-600 mb-2">¡Juego Completado! 🎉</h3>
-            <p className="text-lg mb-1">Puntuación final: <span className="font-bold">{score}</span> puntos</p>
-            <p className="text-lg mb-4">Intentos totales: <span className="font-bold">{this.gameState.attempts}</span></p>
-            <button 
+            <h3 className="text-2xl font-bold text-blue-600 mb-2">
+              ¡Juego Completado! 🎉
+            </h3>
+            <p className="text-lg mb-1">
+              Puntuación final: <span className="font-bold">{score}</span>{" "}
+              puntos
+            </p>
+            <p className="text-lg mb-4">
+              Intentos totales:{" "}
+              <span className="font-bold">{this.gameState.attempts}</span>
+            </p>
+            <button
               className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition duration-300 transform hover:scale-105"
-              onClick={() => this.handleAction({ type: 'RESET_GAME' })}
+              onClick={() => this.handleAction({ type: "RESET_GAME" })}
             >
               Jugar de nuevo
             </button>
@@ -239,27 +354,35 @@ export class MatchingGame extends GameBase {
     const leftItems = pairs.map((pair, index) => ({
       id: `left-${index}`,
       content: pair.left,
-      originalIndex: index
+      originalIndex: index,
     }));
 
-    const rightItems = pairs.map((pair, index) => ({
-      id: `right-${index}`,
-      content: pair.right,
-      originalIndex: index
-    })).sort(() => Math.random() - 0.5);
+    const rightItems = pairs
+      .map((pair, index) => ({
+        id: `right-${index}`,
+        content: pair.right,
+        originalIndex: index,
+      }))
+      .sort(() => Math.random() - 0.5);
 
     return { leftItems, rightItems, pairs };
   }
 
   handleLeftSelection(index) {
     if (this.gameState.matches[index] !== undefined) return;
-    
-    this.updateGameState({ 
+
+    if (this.jumpRef.current) {
+      this.jumpRef.current.currentTime = 0;
+      this.jumpRef.current.volume = 1;
+      this.jumpRef.current.play().catch(() => {});
+    }
+
+    this.updateGameState({
       selectedLeft: index,
       selectedRight: null,
-      lastError: null
+      lastError: null,
     });
-    
+
     if (this.gameState.selectedRight !== null) {
       this.checkForMatch();
     }
@@ -267,12 +390,19 @@ export class MatchingGame extends GameBase {
 
   handleRightSelection(index) {
     if (Object.values(this.gameState.matches).includes(index)) return;
-    
-    this.updateGameState({ 
+
+    // Sonido jump
+    if (this.jumpRef.current) {
+      this.jumpRef.current.currentTime = 0;
+      this.jumpRef.current.volume = 1;
+      this.jumpRef.current.play().catch(() => {});
+    }
+
+    this.updateGameState({
       selectedRight: index,
-      lastError: null 
+      lastError: null,
     });
-    
+
     if (this.gameState.selectedLeft !== null) {
       this.checkForMatch();
     }
@@ -293,6 +423,12 @@ export class MatchingGame extends GameBase {
     const isMatch = leftItem.originalIndex === rightItem.originalIndex;
 
     if (isMatch) {
+      // Sonido de validación
+      if (this.validationRef.current) {
+        this.validationRef.current.currentTime = 0;
+        this.validationRef.current.volume = 0.7;
+        this.validationRef.current.play().catch(() => {});
+      }
       const newMatches = {
         ...this.gameState.matches,
         [selectedLeft]: selectedRight,
@@ -316,7 +452,20 @@ export class MatchingGame extends GameBase {
         this.saveProgress();
       }
     } else {
-      // Si no coinciden, limpiamos la selección después de un breve retraso
+      if (this.notValidationRef.current) {
+        // Pausa y reinicia antes de reproducir
+        this.notValidationRef.current.pause();
+        this.notValidationRef.current.currentTime = 0;
+        this.notValidationRef.current.volume = 0.7;
+        this.notValidationRef.current.play().catch(() => {});
+        setTimeout(() => {
+          if (this.notValidationRef.current) {
+            this.notValidationRef.current.pause();
+            this.notValidationRef.current.currentTime = 0;
+          }
+        }, 2000);
+      }
+
       setTimeout(() => {
         this.updateGameState({
           selectedLeft: null,
@@ -344,7 +493,7 @@ export class MatchingGame extends GameBase {
       completed: false,
       lastError: null,
       hint: null,
-      showConfetti: false
+      showConfetti: false,
     });
   }
 
@@ -356,13 +505,13 @@ export class MatchingGame extends GameBase {
     if (unmatchedIndex === -1) return;
 
     const rightIndex = this.gameData.rightItems.findIndex(
-      item => item.originalIndex === leftItems[unmatchedIndex].originalIndex
+      (item) => item.originalIndex === leftItems[unmatchedIndex].originalIndex
     );
 
-    this.updateGameState({ 
+    this.updateGameState({
       hint: { left: unmatchedIndex, right: rightIndex },
       selectedLeft: null,
-      selectedRight: null
+      selectedRight: null,
     });
 
     setTimeout(() => this.updateGameState({ hint: null }), 3000);

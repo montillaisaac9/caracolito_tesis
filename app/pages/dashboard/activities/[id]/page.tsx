@@ -3,16 +3,21 @@
 import api from "@/app/utils/api";
 import useUserStore from "@/app/stores/useUserStore";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState, useRef, useCallback, use } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import Spinner from "@/app/components/ui/common/progresBar";
 import { GameFactory } from "@/app/lib/games/GameFactory";
 import { GameBase } from "@/app/lib/games/abstract/GameBase";
 import Confetti from "react-confetti";
 import useWindowSize from "react-use/lib/useWindowSize";
 import { Activity } from "@prisma/client";
-import { ActivityWithWordSearchConfig, GameState, ProgressData, ScoreData } from "./components/interfaces";
+import {
+  ActivityWithWordSearchConfig,
+  GameState,
+  ProgressData,
+  ScoreData,
+} from "./components/interfaces";
 import ExportButtons from "./components/ExportReportBtn";
-import { createActivityReportDto } from '@/app/types/reports';
+import { createActivityReportDto } from "@/app/types/reports";
 
 export default function Activities() {
   const params = useParams();
@@ -22,7 +27,9 @@ export default function Activities() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activity, setActivity] = useState<ActivityWithWordSearchConfig | null>(null);
+  const [activity, setActivity] = useState<ActivityWithWordSearchConfig | null>(
+    null
+  );
   const [score, setScore] = useState<Array<ScoreData> | null>(null);
   const [finalyResponce, setFinalyResponce] = useState<{
     message?: string;
@@ -44,6 +51,7 @@ export default function Activities() {
   const latestTimeRemaining = useRef(timeRemaining);
   const latestGameInstance = useRef(gameInstance);
   const latestGameCompleted = useRef(gameCompleted);
+  const confettiSoundRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     latestTimeRemaining.current = timeRemaining;
@@ -219,6 +227,7 @@ export default function Activities() {
     };
   }, []);
 
+  // Modifica handleGameCompletion para reproducir el sonido
   const handleGameCompletion = useCallback(async () => {
     if (latestGameCompleted.current) {
       return;
@@ -226,6 +235,12 @@ export default function Activities() {
 
     setGameCompleted(true);
     startConfetti();
+
+    // Reproducir sonido de confetti
+    if (confettiSoundRef.current) {
+      confettiSoundRef.current.currentTime = 0;
+      confettiSoundRef.current.play().catch(() => {});
+    }
 
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -702,6 +717,12 @@ export default function Activities() {
             </div>
           )}
       </div>
+
+      <audio
+        ref={confettiSoundRef}
+        src="/game_end.mp3"
+        style={{ display: "none" }}
+      />
     </div>
   );
 }
