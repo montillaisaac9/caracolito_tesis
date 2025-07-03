@@ -53,12 +53,16 @@ const userSchema = z.object({
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
-  const [selectedRole, setSelectedRole] = useState<"ADMIN" | "STUDENT" | "TEACHER" | "ALL">("STUDENT");
+  const [selectedRole, setSelectedRole] = useState<"ADMIN" | "STUDENT" | "TEACHER" | "ALL">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Estados de paginación
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(8);
+  const [itemsPerPage] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [hasPrevPage, setHasPrevPage] = useState(false);
 
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -86,56 +90,63 @@ const UserManagement: React.FC = () => {
     setCurrentPage(1);
   }, [selectedRole]);
 
-  useEffect(() => {
-    let filtered = selectedRole === "ALL" ? users : users.filter(u => u.role === selectedRole);
-    
-    // Aplicar búsqueda si hay un término de búsqueda
-    if (searchQuery.trim() !== "") {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(user => 
-        user.name.toLowerCase().includes(query) ||
-        user.email.toLowerCase().includes(query)
-      );
-    }
-    
-    const total = filtered.length;
-    const pages = Math.ceil(total / itemsPerPage);
-    setTotalPages(pages);
-
-    const start = (currentPage - 1) * itemsPerPage;
-    const end = start + itemsPerPage;
-    setFilteredUsers(filtered.slice(start, end));
-  }, [users, selectedRole, currentPage, itemsPerPage, searchQuery]);
-
   const fetchUsers = useCallback(async () => {
-  try {
-    setLoadingUsers(true);
-    const response = await api.get(`/users?page=${currentPage}&limit=${itemsPerPage}`);
+    try {
+      setLoadingUsers(true);
+      setUsers([]); // Clear current users while loading
+      
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: itemsPerPage.toString(),
+        ...(selectedRole !== 'ALL' && { role: selectedRole }),
+        ...(searchQuery.trim() !== '' && { search: searchQuery.trim() })
+      });
 
-    if (response.status === 200) {
-      const data: PaginationData = response.data.data;
+      const response = await api.get(`/users?${params.toString()}`);
 
-      setUsers(data.modules || []);
-      setTotalPages(data.totalPages || 1);
-      setCurrentPage(data.currentPage || 1); // por si backend ajusta
-      // Puedes agregar `setTotalCount`, `setHasNextPage`, etc. si los necesitas más adelante
-    } else {
+      if (response.data?.data) {
+        const { 
+          modules = [], 
+          totalPages = 1, 
+          currentPage: page = 1, 
+          totalCount: count = 0,
+          hasNextPage: hasNext = false,
+          hasPrevPage: hasPrev = false
+        } = response.data.data;
+        
+        setUsers(modules);
+        setFilteredUsers(modules);
+        setTotalPages(totalPages);
+        setCurrentPage(page);
+        setTotalCount(count);
+        setHasNextPage(hasNext);
+        setHasPrevPage(hasPrev);
+      } else {
+        setUsers([]);
+        setFilteredUsers([]);
+        setTotalPages(1);
+        setTotalCount(0);
+        setHasNextPage(false);
+        setHasPrevPage(false);
+      }
+    } catch (error) {
+      console.error("Error al cargar usuarios:", error);
       setUsers([]);
+      setFilteredUsers([]);
       setTotalPages(1);
+    } finally {
+      setLoadingUsers(false);
     }
-  } catch (error) {
-    console.error("Error al cargar usuarios:", error);
-    setUsers([]);
-    setTotalPages(1);
-  } finally {
-    setLoadingUsers(false);
-  }
-}, [currentPage, itemsPerPage]);
+  }, [currentPage, itemsPerPage, selectedRole, searchQuery]);
 
-// Ejecutar cuando cambia la página
-useEffect(() => {
-  fetchUsers();
-}, [fetchUsers]);
+  // Efecto para recargar cuando cambian los filtros o la página
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchUsers();
+    }, 300); // Small debounce for search
+    
+    return () => clearTimeout(timer);
+  }, [currentPage, selectedRole, searchQuery]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -177,7 +188,9 @@ useEffect(() => {
       const response = await axios.post("/api/auth/register", formData);
       if (response.status === 200 || response.status === 201) {
         closeModal();
-        fetchUsers();
+        // Reset to first page when adding new user
+        setCurrentPage(1);
+        await fetchUsers();
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -192,6 +205,66 @@ useEffect(() => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const renderPagination = () => {
+    if (loadingUsers || totalPages <= 1) return null;
+
+    const maxVisiblePages = 5;
+    const pages = [];
+    
+    // Calculate the range of pages to show
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    // Adjust if we're at the end
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    // Generate page buttons
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(
+        <button
+          key={i}
+          onClick={() => setCurrentPage(i)}
+          className={`px-3 py-1 mx-1 rounded-md border ${
+            currentPage === i
+              ? 'bg-blue-600 text-white border-blue-600'
+              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+          }`}
+        >
+          {i}
+        </button>
+      );
+    }
+
+    return (
+      <div className="flex flex-col items-center mt-6 space-y-4">
+        <div className="text-sm text-gray-600 mb-2">
+          Mostrando página {currentPage} de {totalPages}
+        </div>
+        <div className="flex items-center space-x-1">
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+            className="px-3 py-1 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Anterior
+          </button>
+          
+          {pages}
+          
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            disabled={currentPage === totalPages}
+            className="px-3 py-1 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Siguiente
+          </button>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -272,7 +345,7 @@ useEffect(() => {
         {/* Lista */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {loadingUsers ? (
-            <div className="col-span-full flex justify-center py-8 text-white">Cargando usuarios...</div>
+            <div className="col-span-full flex justify-center py-8 text-black">Cargando usuarios...</div>
           ) : filteredUsers.length === 0 ? (
             <div className="col-span-full text-center py-8 text-gray-400">No hay usuarios para mostrar</div>
           ) : (
@@ -300,39 +373,12 @@ useEffect(() => {
           )}
         </div>
 
+        {/* Contador de resultados */}
+        <div className="mt-4 text-sm text-gray-600">
+          Mostrando {filteredUsers.length} de {totalCount} resultados
+        </div>
+        
         {/* Paginación */}
-        {totalPages > 1 && (
-          <div className="flex justify-center mt-6 gap-2">
-            <button
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="px-3 py-1 border rounded-md bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-50"
-            >
-              Anterior
-            </button>
-            {[...Array(totalPages)].map((_, i) => {
-              const pageNum = i + 1;
-              return (
-                <button
-                  key={pageNum}
-                  onClick={() => setCurrentPage(pageNum)}
-                  className={`px-3 py-1 border rounded-md transition-colors ${
-                    pageNum === currentPage ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  {pageNum}
-                </button>
-              );
-            })}
-            <button
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="px-3 py-1 border rounded-md bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-50"
-            >
-              Siguiente
-            </button>
-          </div>
-        )}
       </div>
 
 
@@ -526,8 +572,15 @@ useEffect(() => {
           </Card>
         </div>
       )}
+      
+      {/* Pagination */}
+      <div className="mt-6">
+        {renderPagination()}
+        <div className="text-center text-sm text-gray-500 mt-2">
+          Mostrando página {currentPage} de {totalPages} • Total de usuarios: {users.length}
+        </div>
+      </div>
     </div>
   );
 };
-
 export default UserManagement;

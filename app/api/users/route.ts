@@ -3,68 +3,84 @@ import { PrismaClient } from "@prisma/client";
 import { NextResponse, NextRequest } from "next/server";
 import { message } from "../helpers/responsesMsg";
 
-// Esquema Zod para validar el body de creación de un módulo
-export const ModuleSchema = z.object({
-  title: z
-    .string()
-    .min(1, { message: "El título es obligatorio y no puede estar vacío" })
-    .max(100, { message: "El título no puede exceder 100 caracteres" }),
-  description: z
-    .string()
-    .min(1, { message: "La descripción es obligatoria y no puede estar vacía" })
-    .max(250, { message: "La descripción no puede exceder 250 caracteres" }),
-  isActive: z.boolean().default(true), // Por defecto, el módulo estará activo
-  order: z
-    .number()
-    .int()
-    .positive({ message: "El orden debe ser un número entero positivo" }),
-  createdById: z.string().min(1, {
-    message: "El createdById es obligatorio y no puede estar vacío",
-  }),
-});
 
 // OBTENER TODAS LOS MODULOS CON PAGINADO Y FILTRADO POR ID
 export async function GET(req: NextRequest) {
   try {
-    const seach = req.nextUrl.searchParams;
-    const page = seach.get("page") || "";
-    const limit = seach.get("limit") || "";
-    const id = seach.get("id");
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const search = req.nextUrl.searchParams;
+    const page = search.get("page") || "1";
+    const limit = search.get("limit") || "10";
+    const id = search.get("id");
+    const role = search.get("role") as "ADMIN" | "TEACHER" | "STUDER" | null;
+    const searchQuery = search.get("search") || "";
+    
+    const pageNum = parseInt(page) || 1;
+    const limitNum = parseInt(limit) || 10;
+    const offset = (pageNum - 1) * limitNum;
 
     const prisma = new PrismaClient();
     
+    let whereClause: any = {};
+    
+    // Filtro por rol si se especifica
+    if (role) {
+      whereClause.role = role;
+    }
+    
+    // Búsqueda por nombre o email
+    if (searchQuery) {
+      whereClause.OR = [
+        { name: { contains: searchQuery, mode: 'insensitive' } },
+        { email: { contains: searchQuery, mode: 'insensitive' } }
+      ];
+    }
+
     let modules;
+    let totalCount;
 
     // Si se proporciona un ID específico, buscar solo ese módulo
-    if (id ) {
-      const module = await prisma.user.findUnique({
+    if (id) {
+      const user = await prisma.user.findUnique({
         where: { id }
       });
       
-      if (!module) {
+      if (!user) {
         prisma.$disconnect();
         return NextResponse.json(
-          message({ status: 404, message: "Módulo no encontrado", data: null })
+          message({ status: 404, message: "Usuario no encontrado", data: null })
         );
       }
+      modules = [user];
+      totalCount = 1;
+    } else {
+      // Obtener el total de registros para la paginación
+      totalCount = await prisma.user.count({ where: whereClause });
       
-      modules = [module]; // Mantener como array para consistencia con la respuesta original
-    } 
-    else {
+      // Obtener los usuarios paginados
       modules = await prisma.user.findMany({
+        where: whereClause,
         skip: offset,
-        take: parseInt(limit),
+        take: limitNum,
+        orderBy: { createdAt: 'desc' }
       });
     }
 
     prisma.$disconnect();
 
+    const totalPages = Math.ceil(totalCount / limitNum);
+    
     return NextResponse.json(
       message({
         status: 200,
-        message: "modulos encontrados",
-        data: { modules },
+        message: "Usuarios encontrados",
+        data: { 
+          modules,
+          totalCount,
+          totalPages,
+          currentPage: pageNum,
+          hasNextPage: pageNum < totalPages,
+          hasPrevPage: pageNum > 1
+        },
       })
     );
   } catch (error) {

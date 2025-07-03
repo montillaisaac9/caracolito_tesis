@@ -11,7 +11,7 @@ const registerSchema = z.object({
   lastName: z.string().min(1, { message: "El apellido es requerido" }),
   email: z.string().email({ message: "Correo inválido" }),
   password: z.string().min(6, { message: "La contraseña debe tener al menos 6 caracteres" }),
-  role: z.enum(["STUDENT", "TEACHER"]).optional(), // Opcional, coincide con tu enum de Prisma
+  role: z.enum(["STUDENT", "TEACHER", "ADMIN"]).optional(), // Opcional, coincide con tu enum de Prisma
 });
 
 export async function POST(req: Request) {
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
         name,        // Usamos el nombre concatenado
         email,
         password,    // En texto plano como solicitaste
-        role: role || "STUDENT"|| "TEACHER" ,
+        role: role || "STUDENT"|| "TEACHER"|| "ADMIN" ,
       },
     });
 
