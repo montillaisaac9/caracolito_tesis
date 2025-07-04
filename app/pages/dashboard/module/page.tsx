@@ -261,86 +261,92 @@ export default function ModulesAdmin() {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
+    <div className="p-3 sm:p-4 md:p-6 max-w-7xl mx-auto">
       <Spinner isLoading={loading} />
       
       {/* Header */}
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">Gestión de Módulos</h1>
-            <p className="text-gray-600">
-              {totalCount > 0 
-                ? `Mostrando ${modules.length} de ${totalCount} módulos`
-                : "No hay módulos disponibles"
-              }
-            </p>
+      <div className="mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4">
+          <div className="w-full">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
+              {user?.role === 'STUDENT' ? 'Módulos Disponibles' : 'Gestión de Módulos'}
+            </h1>
+            {(user?.role === 'ADMIN' || user?.role === 'TEACHER') && (
+              <p className="text-sm sm:text-base text-gray-600 mt-1">
+                {totalCount > 0 
+                  ? `Mostrando ${modules.length} de ${totalCount} módulos`
+                  : "No hay módulos disponibles"
+                }
+              </p>
+            )}
           </div>
-          {renderCreateButton()}
+          <div className="w-full sm:w-auto">
+            {renderCreateButton()}
+          </div>
         </div>
       </div>
 
       {/* Create Module Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/70 bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg w-full max-w-md">
-            <div className="p-6">
-              <h2 className="text-xl font-bold mb-4">Nuevo Módulo</h2>
+        <div className="fixed inset-0 bg-black/70 bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-50">
+          <div className="bg-white rounded-lg w-full max-w-md mx-auto max-h-[90vh] overflow-y-auto">
+            <div className="p-4 sm:p-6">
+              <h2 className="text-lg sm:text-xl font-bold mb-4">Nuevo Módulo</h2>
               <form onSubmit={handleCreateModule}>
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Título</label>
+                    <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1">Título</label>
                     <input
                       type="text"
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      className="w-full p-2 border rounded-md"
+                      className="w-full p-2 sm:p-2.5 border rounded-md text-sm sm:text-base"
                       required
                     />
                     {formErrors.title && (
-                      <p className="text-red-500 text-sm mt-1">{formErrors.title}</p>
+                      <p className="text-red-500 text-xs sm:text-sm mt-1">{formErrors.title}</p>
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                    <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1">Descripción</label>
                     <textarea
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
-                      className="w-full p-2 border rounded-md"
+                      className="w-full p-2 sm:p-2.5 border rounded-md text-sm sm:text-base"
                       rows={3}
                       required
                     />
                     {formErrors.description && (
-                      <p className="text-red-500 text-sm mt-1">{formErrors.description}</p>
+                      <p className="text-red-500 text-xs sm:text-sm mt-1">{formErrors.description}</p>
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Orden</label>
+                    <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1">Orden</label>
                     <input
                       type="number"
                       value={order}
                       onChange={(e) => setOrder(Number(e.target.value))}
-                      className="w-full p-2 border rounded-md"
+                      className="w-full p-2 sm:p-2.5 border rounded-md text-sm sm:text-base"
                       min={1}
                       required
                     />
                     {formErrors.order && (
-                      <p className="text-red-500 text-sm mt-1">{formErrors.order}</p>
+                      <p className="text-red-500 text-xs sm:text-sm mt-1">{formErrors.order}</p>
                     )}
                   </div>
                 </div>
-                <div className="mt-6 flex justify-end space-x-3">
+                <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
                   <button
                     type="button"
                     onClick={handleCloseModal}
-                    className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+                    className="px-3 sm:px-4 py-2 text-sm sm:text-base text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
                     disabled={formLoading}
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                    className="px-3 sm:px-4 py-2 text-sm sm:text-base bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
                     disabled={formLoading}
                   >
                     {formLoading ? 'Guardando...' : 'Guardar'}
@@ -352,67 +358,67 @@ export default function ModulesAdmin() {
         </div>
       )}
 
-      {/* Edit Module Modal */}
+      {/* Edit Module Modal - Same styling as Create Modal */}
       {isEditModalOpen && editingModule && (
-        <div className="fixed inset-0 bg-black/70 bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg w-full max-w-md">
-            <div className="p-6">
-              <h2 className="text-xl font-bold mb-4">Editar Módulo</h2>
+        <div className="fixed inset-0 bg-black/70 bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-50">
+          <div className="bg-white rounded-lg w-full max-w-md mx-auto max-h-[90vh] overflow-y-auto">
+            <div className="p-4 sm:p-6">
+              <h2 className="text-lg sm:text-xl font-bold mb-4">Editar Módulo</h2>
               <form onSubmit={handleUpdateModule}>
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Título</label>
+                    <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1">Título</label>
                     <input
                       type="text"
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      className="w-full p-2 border rounded-md"
+                      className="w-full p-2 sm:p-2.5 border rounded-md text-sm sm:text-base"
                       required
                     />
                     {formErrors.title && (
-                      <p className="text-red-500 text-sm mt-1">{formErrors.title}</p>
+                      <p className="text-red-500 text-xs sm:text-sm mt-1">{formErrors.title}</p>
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                    <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1">Descripción</label>
                     <textarea
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
-                      className="w-full p-2 border rounded-md"
+                      className="w-full p-2 sm:p-2.5 border rounded-md text-sm sm:text-base"
                       rows={3}
                       required
                     />
                     {formErrors.description && (
-                      <p className="text-red-500 text-sm mt-1">{formErrors.description}</p>
+                      <p className="text-red-500 text-xs sm:text-sm mt-1">{formErrors.description}</p>
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Orden</label>
+                    <label className="block text-sm sm:text-base font-medium text-gray-700 mb-1">Orden</label>
                     <input
                       type="number"
                       value={order}
                       onChange={(e) => setOrder(Number(e.target.value))}
-                      className="w-full p-2 border rounded-md"
+                      className="w-full p-2 sm:p-2.5 border rounded-md text-sm sm:text-base"
                       min={1}
                       required
                     />
                     {formErrors.order && (
-                      <p className="text-red-500 text-sm mt-1">{formErrors.order}</p>
+                      <p className="text-red-500 text-xs sm:text-sm mt-1">{formErrors.order}</p>
                     )}
                   </div>
                 </div>
-                <div className="mt-6 flex justify-end space-x-3">
+                <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
                   <button
                     type="button"
                     onClick={closeEditModal}
-                    className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+                    className="px-3 sm:px-4 py-2 text-sm sm:text-base text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
                     disabled={formLoading}
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                    className="px-3 sm:px-4 py-2 text-sm sm:text-base bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
                     disabled={formLoading}
                   >
                     {formLoading ? 'Guardando...' : 'Guardar Cambios'}
@@ -424,121 +430,192 @@ export default function ModulesAdmin() {
         </div>
       )}
 
-      {/* Modules Table */}
-      <div className="bg-white shadow-lg rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Título
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Descripción
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Orden
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Estado
-              </th>
-              {canEditDelete && (
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Acciones
-                </th>
-              )}
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {modules.length === 0 ? (
+      {/* Modules Table - Desktop */}
+      <div className="hidden sm:block bg-white shadow-lg rounded-lg overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
               <tr>
-                <td colSpan={canEditDelete ? 5 : 4} className="text-center py-8 text-gray-500">
-                  {loading ? "Cargando módulos..." : "No hay módulos disponibles"}
-                </td>
+                <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-500 uppercase tracking-wider">
+                  Título
+                </th>
+                <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-500 uppercase tracking-wider">
+                  Descripción
+                </th>
+                <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-500 uppercase tracking-wider">
+                  Orden
+                </th>
+                <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-500 uppercase tracking-wider">
+                  Estado
+                </th>
+                {canEditDelete && (
+                  <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    Acciones
+                  </th>
+                )}
               </tr>
-            ) : (
-              modules.map((module) => (
-                <React.Fragment key={module.id}>
-                  <tr className="hover:bg-gray-50 cursor-pointer" onClick={() => handleRowClick(module.id)}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          <Gamepad2 className="h-6 w-6 text-gray-500" />
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
-                            {module.title}
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {modules.length === 0 ? (
+                <tr>
+                  <td colSpan={canEditDelete ? 5 : 4} className="px-4 sm:px-6 py-8 text-center text-sm text-gray-500">
+                    {loading ? "Cargando módulos..." : "No hay módulos disponibles"}
+                  </td>
+                </tr>
+              ) : (
+                modules.map((module) => (
+                  <React.Fragment key={module.id}>
+                    <tr className="hover:bg-gray-50 cursor-pointer" onClick={() => handleRowClick(module.id)}>
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10">
+                            <Gamepad2 className="h-5 w-5 sm:h-6 sm:w-6 text-gray-500" />
+                          </div>
+                          <div className="ml-2 sm:ml-4">
+                            <div className="text-sm font-medium text-gray-900">
+                              {module.title}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">{module.description}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {module.order}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${module.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                        {module.isActive ? 'Activo' : 'Inactivo'}
-                      </span>
-                    </td>
-                    {canEditDelete && (
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        {renderActionButtons(module)}
                       </td>
-                    )}
-                  </tr>
-                  <tr>
-                    <td colSpan={canEditDelete ? 5 : 4} className="px-6 py-2 text-xs text-gray-500">
-                      <div className="flex items-center">
-                        <Gamepad2 className="h-4 w-4 mr-1 text-gray-400" />
-                        <span>Contiene juegos interactivos</span>
-                      </div>
-                    </td>
-                  </tr>
-                </React.Fragment>
-              ))
-            )}
-          </tbody>
-        </table>
+                      <td className="px-4 sm:px-6 py-4">
+                        <div className="text-sm text-gray-900 line-clamp-2">{module.description}</div>
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {module.order}
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${module.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                          {module.isActive ? 'Activo' : 'Inactivo'}
+                        </span>
+                      </td>
+                      {canEditDelete && (
+                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          {renderActionButtons(module)}
+                        </td>
+                      )}
+                    </tr>
+                    <tr>
+                      <td colSpan={canEditDelete ? 5 : 4} className="px-4 sm:px-6 py-2 text-xs text-gray-500">
+                        <div className="flex items-center">
+                          <Gamepad2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 text-gray-400" />
+                          <span>Contiene juegos interactivos</span>
+                        </div>
+                      </td>
+                    </tr>
+                  </React.Fragment>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Mobile Cards View */}
+      <div className="sm:hidden space-y-3">
+        {modules.length === 0 ? (
+          <div className="text-center py-8 text-sm text-gray-500">
+            {loading ? "Cargando módulos..." : "No hay módulos disponibles"}
+          </div>
+        ) : (
+          modules.map((module) => (
+            <div key={module.id} className="bg-white shadow rounded-lg overflow-hidden">
+              <div 
+                className="p-4 border-b border-gray-200"
+                onClick={() => handleRowClick(module.id)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Gamepad2 className="h-5 w-5 text-gray-500 mr-2" />
+                    <h3 className="text-sm font-medium text-gray-900">{module.title}</h3>
+                  </div>
+                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                    module.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  }`}>
+                    {module.isActive ? 'Activo' : 'Inactivo'}
+                  </span>
+                </div>
+                <p className="mt-2 text-xs text-gray-600 line-clamp-2">{module.description}</p>
+                <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+                  <span>Orden: {module.order}</span>
+                  <div className="flex items-center">
+                    <Gamepad2 className="h-3 w-3 mr-1 text-gray-400" />
+                    <span>Juegos interactivos</span>
+                  </div>
+                </div>
+              </div>
+              {canEditDelete && (
+                <div className="bg-gray-50 px-4 py-2 flex justify-end space-x-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditModule(module);
+                    }}
+                    className="text-xs px-3 py-1.5 text-blue-600 hover:text-blue-800"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteModule(module.id);
+                    }}
+                    className="text-xs px-3 py-1.5 text-red-600 hover:text-red-800"
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              )}
+            </div>
+          ))
+        )}
       </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="mt-6 flex justify-center items-center space-x-2">
-          <button
-            disabled={!hasPrevPage || loading}
-            onClick={() => handlePageChange(page - 1)}
-            className="px-3 py-2 border rounded-md bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Anterior
-          </button>
-          
-          {getPageNumbers().map((pageNum) => (
-            <button
-              key={pageNum}
-              onClick={() => handlePageChange(pageNum)}
-              className={`px-3 py-2 border rounded-md ${
-                pageNum === page
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              {pageNum}
-            </button>
-          ))}
-          
-          <button
-            disabled={!hasNextPage || loading}
-            onClick={() => handlePageChange(page + 1)}
-            className="px-3 py-2 border rounded-md bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Siguiente
-          </button>
+        <div className="mt-4 sm:mt-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="text-xs sm:text-sm text-gray-600">
+              Página {page} de {totalPages} • Total: {totalCount} módulos
+            </div>
+            <div className="flex items-center space-x-1 sm:space-x-2">
+              <button
+                disabled={!hasPrevPage || loading}
+                onClick={() => handlePageChange(page - 1)}
+                className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm border rounded-md bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Anterior
+              </button>
+              
+              <div className="flex space-x-1 overflow-x-auto">
+                {getPageNumbers().map((pageNum) => (
+                  <button
+                    key={pageNum}
+                    onClick={() => handlePageChange(pageNum)}
+                    className={`min-w-[32px] px-2 py-1.5 text-xs sm:text-sm border rounded-md ${
+                      pageNum === page
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                ))}
+              </div>
+              
+              <button
+                disabled={!hasNextPage || loading}
+                onClick={() => handlePageChange(page + 1)}
+                className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm border rounded-md bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Siguiente
+              </button>
+            </div>
+          </div>
         </div>
       )}
       
-      {totalCount > 0 && (
+      {(user?.role === 'ADMIN' || user?.role === 'TEACHER') && (
         <div className="mt-4 text-center text-sm text-gray-600">
           Página {page} de {totalPages} • Total: {totalCount} módulos
         </div>

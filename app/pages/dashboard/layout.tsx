@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FiHome, FiBook, FiUser, FiMenu, FiBell } from "react-icons/fi";
+import { FiHome, FiBook, FiUser, FiMenu, FiVideo } from "react-icons/fi";
 import Sidebar from "@/app/components/ui/common/sidebar";
 import useUserStore from "@/app/stores/useUserStore";
 
@@ -17,6 +17,7 @@ const initialLinks = [
   { name: "Dashboard", href: "/pages/dashboard", icon: <FiHome />, select: true , role: "ADMIN" },
   { name: "Dashboard", href: "/pages/dashboard", icon: <FiHome />, select: true , role: "TEACHER" },
   { name: "Módulos", href: "/pages/dashboard/module", icon: <FiBook />, select: false },
+  { name: "Tutoriales", href: "/pages/dashboard/tutorial", icon: <FiVideo />, select: false },
   { name: "Perfiles", href: "/pages/dashboard/perfil", icon: <FiUser />, select: false, role: "ADMIN" },
 ];
 
